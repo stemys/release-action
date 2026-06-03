@@ -104,6 +104,9 @@ jobs:
           echo "$CHANGELOG_DIFF"
           echo ""
 
+          # Write to file for artifact upload
+          echo "$CHANGELOG_DIFF" > changelog-diff-preview.md
+
           fail() { echo "FAIL: $1"; exit 1; }
           ok()   { echo "OK  : $1"; }
           assert_contains() {
@@ -171,3 +174,11 @@ jobs:
 
           echo ""
           echo "All assertions passed."
+
+      - name: Upload changelog diff preview
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: changelog-diff-preview
+          path: changelog-diff-preview.md
+          retention-days: 7
