@@ -41,7 +41,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^2.0.2",
+    "@actions/core": "^3.0.1",
     "@actions/exec": "^3.0.0",
     "@actions/github": "^7.0.0",
     "conventional-commits-parser": "^6.4.0",
