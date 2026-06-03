@@ -34,6 +34,13 @@ inputs:
       the version heading and before the commit list. Leave empty to omit.
     required: false
     default: ''
+  merge-back-to:
+    description: >-
+      Branch to merge the release back into (e.g. main, master, develop). When
+      set, a branch release/<tag> is created from the new tag and a pull request
+      targeting this branch is opened. Leave empty to skip.
+    required: false
+    default: ''
   dry-run:
     description: 'Preview all outputs without touching git or GitHub'
     required: false

@@ -33,6 +33,15 @@ const mockCommitChangelog =
 const mockCreateTag = jest.fn<(tagName: string) => Promise<void>>();
 const mockCreateRelease =
   jest.fn<(token: string, tagName: string, body: string) => Promise<string>>();
+const mockCreateMergeBackPR =
+  jest.fn<
+    (
+      token: string,
+      tagName: string,
+      mergeBackTo: string,
+      body: string
+    ) => Promise<string>
+  >();
 
 jest.unstable_mockModule('node:fs/promises', () => ({
   readFile: mockReadFile
@@ -51,7 +60,8 @@ jest.unstable_mockModule('../src/git.js', () => ({
   createTag: mockCreateTag
 }));
 jest.unstable_mockModule('../src/github-release.js', () => ({
-  createRelease: mockCreateRelease
+  createRelease: mockCreateRelease,
+  createMergeBackPR: mockCreateMergeBackPR
 }));
 
 const { run } = await import('../src/main.js');
@@ -63,7 +73,8 @@ function setupInputs({
   scope = 'patch',
   stage = 'stable',
   dryRun = false,
-  headerMarkdownFile = ''
+  headerMarkdownFile = '',
+  mergeBackTo = ''
 } = {}): void {
   core.getInput.mockImplementation((name) => {
     return (
@@ -74,7 +85,8 @@ function setupInputs({
           'tag-prefix': '',
           'changelog-file': 'CHANGELOG.md',
           'github-token': 'gh-token',
-          'header-markdown-file': headerMarkdownFile
+          'header-markdown-file': headerMarkdownFile,
+          'merge-back-to': mergeBackTo
         } as Record<string, string>
       )[name as string] ?? ''
     );
@@ -91,6 +103,9 @@ describe('run', () => {
     mockGenerateDiff.mockResolvedValue(DIFF);
     mockCreateRelease.mockResolvedValue(
       'https://github.com/owner/repo/releases/tag/1.0.1'
+    );
+    mockCreateMergeBackPR.mockResolvedValue(
+      'https://github.com/owner/repo/pull/1'
     );
     mockReadFile.mockResolvedValue('');
   });
@@ -205,6 +220,29 @@ describe('run', () => {
       expect.any(String),
       expect.any(String),
       'Custom release notes content.'
+    );
+  });
+
+  it('does not create a merge-back PR when merge-back-to is empty', async () => {
+    setupInputs();
+    await run();
+    expect(mockCreateMergeBackPR).not.toHaveBeenCalled();
+  });
+
+  it('does not create a merge-back PR in dry-run mode', async () => {
+    setupInputs({ dryRun: true, mergeBackTo: 'main' });
+    await run();
+    expect(mockCreateMergeBackPR).not.toHaveBeenCalled();
+  });
+
+  it('creates a merge-back PR with the token, tag, target branch, and diff', async () => {
+    setupInputs({ mergeBackTo: 'main' });
+    await run();
+    expect(mockCreateMergeBackPR).toHaveBeenCalledWith(
+      'gh-token',
+      '1.0.1',
+      'main',
+      DIFF
     );
   });
 

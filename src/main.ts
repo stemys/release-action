@@ -7,7 +7,7 @@ import {
   createTag,
   prependChangelog
 } from './git.js';
-import { createRelease } from './github-release.js';
+import { createMergeBackPR, createRelease } from './github-release.js';
 import { resolveVersions } from './version.js';
 
 const VALID_SCOPES = ['major', 'minor', 'patch'];
@@ -22,6 +22,7 @@ export async function run(): Promise<void> {
     const token = core.getInput('github-token', { required: true });
     const trackerUrl = core.getInput('tracker-url');
     const headerMarkdownFile = core.getInput('header-markdown-file');
+    const mergeBackTo = core.getInput('merge-back-to');
     const dryRun = core.getBooleanInput('dry-run');
 
     if (!VALID_SCOPES.includes(scope)) {
@@ -34,7 +35,6 @@ export async function run(): Promise<void> {
         `Invalid release_stage "${stage}". Must be one of: ${VALID_STAGES.join(', ')}`
       );
     }
-
     const serverUrl = process.env.GITHUB_SERVER_URL;
     const repo = process.env.GITHUB_REPOSITORY;
 
@@ -87,6 +87,17 @@ export async function run(): Promise<void> {
 
     const releaseUrl = await createRelease(token, newTag, diff);
     core.info(`GitHub Release created: ${releaseUrl}`);
+
+    if (mergeBackTo) {
+      const prUrl = await createMergeBackPR(token, newTag, mergeBackTo, diff);
+      if (prUrl) {
+        core.info(`Merge-back PR created: ${prUrl}`);
+      } else {
+        core.info(
+          `Skipping merge-back PR: ${newTag} has no commits ahead of ${mergeBackTo}.`
+        );
+      }
+    }
   } catch (error) {
     core.setFailed((error as Error).message);
   }

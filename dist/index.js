@@ -33955,6 +33955,42 @@ async function createRelease(token, tagName, body) {
     });
     return data.html_url;
 }
+async function createMergeBackPR(token, tagName, mergeBackTo, body) {
+    const octokit = githubExports.getOctokit(token);
+    const { owner, repo } = githubExports.context.repo;
+    const { data: comparison } = await octokit.rest.repos.compareCommitsWithBasehead({
+        owner,
+        repo,
+        basehead: `${mergeBackTo}...${tagName}`
+    });
+    if (comparison.ahead_by === 0) {
+        return null;
+    }
+    const { data: ref } = await octokit.rest.git.getRef({
+        owner,
+        repo,
+        ref: `tags/${tagName}`
+    });
+    const branchName = `release/${tagName}`;
+    await octokit.rest.git.createRef({
+        owner,
+        repo,
+        ref: `refs/heads/${branchName}`,
+        sha: ref.object.sha
+    });
+    const warning = `> [!WARNING]\n` +
+        `> **Merge this PR using "Rebase and merge" only.**\n` +
+        `> Squashing or creating a merge commit will collapse the release commits and break the commit history on \`${mergeBackTo}\`.\n\n`;
+    const { data: pr } = await octokit.rest.pulls.create({
+        owner,
+        repo,
+        title: `chore: merge release ${tagName} into ${mergeBackTo}`,
+        head: branchName,
+        base: mergeBackTo,
+        body: warning + body
+    });
+    return pr.html_url;
+}
 
 var re = {exports: {}};
 
@@ -36800,6 +36836,7 @@ async function run() {
         const token = coreExports.getInput('github-token', { required: true });
         const trackerUrl = coreExports.getInput('tracker-url');
         const headerMarkdownFile = coreExports.getInput('header-markdown-file');
+        const mergeBackTo = coreExports.getInput('merge-back-to');
         const dryRun = coreExports.getBooleanInput('dry-run');
         if (!VALID_SCOPES.includes(scope)) {
             throw new Error(`Invalid release_scope "${scope}". Must be one of: ${VALID_SCOPES.join(', ')}`);
@@ -36838,6 +36875,15 @@ async function run() {
         await createTag(newTag);
         const releaseUrl = await createRelease(token, newTag, diff);
         coreExports.info(`GitHub Release created: ${releaseUrl}`);
+        if (mergeBackTo) {
+            const prUrl = await createMergeBackPR(token, newTag, mergeBackTo, diff);
+            if (prUrl) {
+                coreExports.info(`Merge-back PR created: ${prUrl}`);
+            }
+            else {
+                coreExports.info(`Skipping merge-back PR: ${newTag} has no commits ahead of ${mergeBackTo}.`);
+            }
+        }
     }
     catch (error) {
         coreExports.setFailed(error.message);
