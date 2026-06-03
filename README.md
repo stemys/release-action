@@ -36,22 +36,22 @@ Set `dry-run: true` to preview all outputs without touching Git or GitHub.
 
 ## Inputs
 
-| Input            | Required | Default        | Description                                          |
-| ---------------- | -------- | -------------- | ---------------------------------------------------- |
-| `release_scope`  | Yes      | —              | SemVer component to bump: `major`, `minor`, `patch`  |
-| `release_stage`  | Yes      | `stable`       | Prerelease stage: `stable`, `rc`, `beta`, `alpha`    |
-| `tag-prefix`     | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)    |
-| `changelog-file` | No       | `CHANGELOG.md` | Path to the changelog file                           |
-| `github-token`   | Yes      | —              | Token used to create the GitHub Release              |
-| `dry-run`        | No       | `false`        | Preview outputs without any Git or GitHub writes     |
+| Input            | Required | Default        | Description                                         |
+| ---------------- | -------- | -------------- | --------------------------------------------------- |
+| `release_scope`  | Yes      | —              | SemVer component to bump: `major`, `minor`, `patch` |
+| `release_stage`  | Yes      | `stable`       | Prerelease stage: `stable`, `rc`, `beta`, `alpha`   |
+| `tag-prefix`     | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)   |
+| `changelog-file` | No       | `CHANGELOG.md` | Path to the changelog file                          |
+| `github-token`   | Yes      | —              | Token used to create the GitHub Release             |
+| `dry-run`        | No       | `false`        | Preview outputs without any Git or GitHub writes    |
 
 ## Outputs
 
-| Output             | Description                                       |
-| ------------------ | ------------------------------------------------- |
-| `previous-version` | The latest tag found before this run              |
-| `new-version`      | The new tag created by this run                   |
-| `changelog-diff`   | The Markdown changelog fragment for this release  |
+| Output             | Description                                      |
+| ------------------ | ------------------------------------------------ |
+| `previous-version` | The latest tag found before this run             |
+| `new-version`      | The new tag created by this run                  |
+| `changelog-diff`   | The Markdown changelog fragment for this release |
 
 ## Versioning behaviour
 
@@ -74,7 +74,7 @@ Add `tag-prefix: v` to produce `v1.2.4` style tags.
 The following commit types appear in the changelog:
 
 | Type       | Section                  | Hidden |
-|------------| ------------------------ | ------ |
+| ---------- | ------------------------ | ------ |
 | `feat`     | Features                 | no     |
 | `fix`      | Bugfixes                 | no     |
 | `perf`     | Performance Improvements | no     |

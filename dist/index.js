@@ -28907,14 +28907,14 @@ class CommitParser {
 // To toggle a type in/out of the changelog, flip its hidden flag.
 const COMMIT_TYPES = [
     { type: 'feat', title: 'Features', hidden: false },
-    { type: 'fix', title: 'Bug Fixes', hidden: false },
+    { type: 'fix', title: 'Bugfixes', hidden: false },
     { type: 'perf', title: 'Performance Improvements', hidden: false },
     { type: 'revert', title: 'Reverts', hidden: false },
-    { type: 'doc', title: 'Documentation', hidden: false },
+    { type: 'docs', title: 'Documentation', hidden: false },
     { type: 'refactor', title: 'Code Refactoring', hidden: true },
     { type: 'style', title: 'Styles', hidden: true },
     { type: 'test', title: 'Tests', hidden: true },
-    { type: 'build', title: 'Build System', hidden: true },
+    { type: 'build', title: 'Build tool', hidden: true },
     { type: 'ci', title: 'CI/CD', hidden: true },
     { type: 'chore', title: 'Chores', hidden: true }
 ];
