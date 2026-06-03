@@ -93,7 +93,7 @@ Full example with all inputs:
 ## Versioning behaviour
 
 The version base is always the latest **stable** tag (no prerelease suffix).
-Pre-release series are tracked separately:
+Prerelease series are tracked separately:
 
 | Latest stable | Scope   | Stage    | Result       |
 | ------------- | ------- | -------- | ------------ |
