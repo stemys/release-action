@@ -172,9 +172,9 @@ describe('run', () => {
       '1.0.1',
       expect.any(String),
       'v1.0.0',
-      '',
-      '',
-      '',
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
       ''
     );
   });

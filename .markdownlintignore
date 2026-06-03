@@ -1,0 +1,3 @@
+# Intentionally has no top-level heading — it is a snippet injected into
+# the changelog by header-markdown-file, not a standalone document.
+.github/release-header.md
