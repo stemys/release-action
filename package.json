@@ -1,22 +1,25 @@
 {
-  "name": "hello-world-javascript-action",
-  "description": "This action prints `Hello, World!` or `Hello, <who-to-greet>!` to the log",
+  "name": "release-action",
+  "description": "Automates versioning, CHANGELOG generation, and GitHub Releases in one step",
   "version": "1.0.0",
-  "author": "",
+  "author": "Florian Schaller",
   "private": true,
   "type": "module",
-  "homepage": "https://github.com/actions/hello-world-javascript-action#readme",
+  "homepage": "https://github.com/stemys/release-action#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/hello-world-javascript-action.git"
+    "url": "git+https://github.com/stemys/release-action.git"
   },
   "bugs": {
-    "url": "https://github.com/actions/hello-world-javascript-action/issues"
+    "url": "https://github.com/stemys/release-action/issues"
   },
   "keywords": [
     "GitHub",
     "Actions",
-    "JavaScript"
+    "release",
+    "semver",
+    "changelog",
+    "conventional-commits"
   ],
   "exports": {
     ".": "./dist/index.js"
@@ -39,7 +42,10 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^2.0.2",
-    "@actions/github": "^7.0.0"
+    "@actions/exec": "^3.0.0",
+    "@actions/github": "^7.0.0",
+    "conventional-commits-parser": "^6.4.0",
+    "semver": "^7.8.1"
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.1",

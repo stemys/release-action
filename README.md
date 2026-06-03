@@ -1,118 +1,98 @@
-# Hello, World! JavaScript Action
+# Release Action
 
-[![GitHub Super-Linter](https://github.com/actions/hello-world-javascript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
-![CI](https://github.com/actions/hello-world-javascript-action/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/stemys/release-action/actions/workflows/ci.yml/badge.svg)](https://github.com/stemys/release-action/actions/workflows/ci.yml)
+[![GitHub Super-Linter](https://github.com/stemys/release-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
 
-This action prints `Hello, World!` or `Hello, <who-to-greet>!` to the log. To
-learn how this action was built, see
-[Creating a JavaScript action](https://docs.github.com/en/actions/creating-actions/creating-a-javascript-action).
+A GitHub Action that automates versioning, CHANGELOG generation, and GitHub
+Releases — all in one step.
 
-## Create Your Own Action
+## What it does
 
-To create your own action, you can use this repository as a template! Just
-follow the below instructions:
+1. Resolves the latest SemVer tag in your repository
+2. Calculates the next version based on `release_scope` and `release_stage`
+3. Generates a CHANGELOG diff from commits since the last tag (Conventional
+   Commits aware)
+4. Prepends the diff to your `CHANGELOG.md`
+5. Commits the updated `CHANGELOG.md` to the current branch
+6. Creates a lightweight git tag on that commit
+7. Creates a GitHub Release with the new tag as title and the diff as body
 
-1. Click the **Use this template** button at the top of the repository
-1. Select **Create a new repository**
-1. Select an owner and name for your new repository
-1. Click **Create repository**
-1. Clone your new repository
-
-> [!CAUTION]
->
-> Make sure to remove or update the [`CODEOWNERS`](./CODEOWNERS) file! For
-> details on how to use this file, see
-> [About code owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
+Set `dry-run: true` to preview all outputs without touching git or GitHub.
 
 ## Usage
 
-Here's an example of how to use this action in a workflow file:
-
 ```yaml
-name: Example Workflow
-
-on:
-  workflow_dispatch:
-    inputs:
-      who-to-greet:
-        description: Who to greet in the log
-        required: true
-        default: 'World'
-        type: string
-
-jobs:
-  say-hello:
-    name: Say Hello
-    runs-on: ubuntu-latest
-
-    steps:
-      # Change @main to a specific commit SHA or version tag, e.g.:
-      # actions/hello-world-javascript-action@e76147da8e5c81eaf017dede5645551d4b94427b
-      # actions/hello-world-javascript-action@v1.2.3
-      - name: Print to Log
-        id: print-to-log
-        uses: actions/hello-world-javascript-action@main
-        with:
-          who-to-greet: ${{ inputs.who-to-greet }}
+- name: Release
+  id: release
+  uses: stemys/release-action@main
+  with:
+    release_scope: patch # major | minor | patch
+    release_stage: stable # stable | rc | beta | alpha
+    github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-For example workflow runs, check out the
-[Actions tab](https://github.com/actions/hello-world-javascript-action/actions)!
-🚀
+> **Note:** The workflow must check out the repository with `fetch-depth: 0` so
+> that all tags are available.
 
 ## Inputs
 
-| Input          | Default | Description                     |
-| -------------- | ------- | ------------------------------- |
-| `who-to-greet` | `World` | The name of the person to greet |
+| Input            | Required | Default        | Description                                         |
+| ---------------- | -------- | -------------- | --------------------------------------------------- |
+| `release_scope`  | Yes      | —              | SemVer component to bump: `major`, `minor`, `patch` |
+| `release_stage`  | No       | `stable`       | Pre-release stage: `stable`, `rc`, `beta`, `alpha`  |
+| `tag-prefix`     | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)   |
+| `changelog-file` | No       | `CHANGELOG.md` | Path to the changelog file                          |
+| `github-token`   | Yes      | —              | Token used to create the GitHub Release             |
+| `dry-run`        | No       | `false`        | Preview outputs without any git or GitHub writes    |
 
 ## Outputs
 
-| Output | Description             |
-| ------ | ----------------------- |
-| `time` | The time we greeted you |
+| Output             | Description                                      |
+| ------------------ | ------------------------------------------------ |
+| `previous-version` | The latest tag found before this run             |
+| `new-version`      | The new tag created by this run                  |
+| `changelog-diff`   | The markdown changelog fragment for this release |
+
+## Versioning behaviour
+
+The version base is always the latest **stable** tag (no pre-release suffix).
+Pre-release series are tracked separately:
+
+| Latest stable | Scope   | Stage    | Result        |
+| ------------- | ------- | -------- | ------------- |
+| `v1.2.3`      | `patch` | `stable` | `v1.2.4`      |
+| `v1.2.3`      | `minor` | `stable` | `v1.3.0`      |
+| `v1.2.3`      | `patch` | `rc`     | `v1.2.4-rc.0` |
+| `v1.2.4-rc.0` | `patch` | `rc`     | `v1.2.4-rc.1` |
+| `v1.2.4-rc.1` | `patch` | `stable` | `v1.2.4`      |
+
+## Conventional Commits
+
+The following commit types appear in the changelog:
+
+| Type       | Section                  | Hidden |
+| ---------- | ------------------------ | ------ |
+| `feat`     | Features                 | no     |
+| `fix`      | Bug Fixes                | no     |
+| `perf`     | Performance Improvements | no     |
+| `revert`   | Reverts                  | no     |
+| `docs`     | Documentation            | no     |
+| `refactor` | Code Refactoring         | yes    |
+| `style`    | Styles                   | yes    |
+| `test`     | Tests                    | yes    |
+| `build`    | Build System             | yes    |
+| `ci`       | CI/CD                    | yes    |
+| `chore`    | Chores                   | yes    |
+
+Commits with a `BREAKING CHANGE` footer always produce a **BREAKING CHANGES**
+section regardless of type.
+
+To change which types appear, flip `hidden` in the `COMMIT_TYPES` array in
+[`src/changelog.js`](./src/changelog.js).
 
 ## Dependency License Management
 
-This template includes a GitHub Actions workflow,
-[`licensed.yml`](./.github/workflows/licensed.yml), that uses
-[Licensed](https://github.com/licensee/licensed) to check for dependencies with
-missing or non-compliant licenses. This workflow is initially disabled. To
-enable the workflow, follow the below steps.
-
-1. Open [`licensed.yml`](./.github/workflows/licensed.yml)
-1. Uncomment the following lines:
-
-   ```yaml
-   # pull_request:
-   #   branches:
-   #     - main
-   # push:
-   #   branches:
-   #     - main
-   ```
-
-1. Save and commit the changes
-
-Once complete, this workflow will run any time a pull request is created or
-changes pushed directly to `main`. If the workflow detects any dependencies with
-missing or non-compliant licenses, it will fail the workflow and provide details
-on the issue(s) found.
-
-### Updating Licenses
-
-Whenever you install or update dependencies, you can use the Licensed CLI to
-update the licenses database. To install Licensed, see the project's
-[Readme](https://github.com/licensee/licensed?tab=readme-ov-file#installation).
-
-To update the cached licenses, run the following command:
-
-```bash
-licensed cache
-```
-
-To check the status of cached licenses, run the following command:
-
-```bash
-licensed status
-```
+This repository includes a [`licensed.yml`](./.github/workflows/licensed.yml)
+workflow that uses [Licensed](https://github.com/licensee/licensed) to check for
+dependencies with missing or non-compliant licenses. To enable it, uncomment the
+trigger lines in that file.

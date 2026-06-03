@@ -1,26 +1,73 @@
 import * as core from '@actions/core'
-import * as github from '@actions/github'
+import { resolveVersions } from './version.js'
+import { generateDiff } from './changelog.js'
+import {
+  configureGit,
+  prependChangelog,
+  commitChangelog,
+  createTag
+} from './git.js'
+import { createRelease } from './github-release.js'
 
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
+const VALID_SCOPES = ['major', 'minor', 'patch']
+const VALID_STAGES = ['alpha', 'beta', 'rc', 'stable']
+
 export async function run() {
   try {
-    // The `who-to-greet` input is defined in action metadata file
-    const whoToGreet = core.getInput('who-to-greet', { required: true })
-    core.info(`Hello, ${whoToGreet}!`)
+    const scope = core.getInput('release_scope', { required: true })
+    const stage = core.getInput('release_stage') || 'stable'
+    const tagPrefix = core.getInput('tag-prefix')
+    const changelogFile = core.getInput('changelog-file') || 'CHANGELOG.md'
+    const token = core.getInput('github-token', { required: true })
+    const trackerUrl = core.getInput('tracker-url')
+    const dryRun = core.getBooleanInput('dry-run')
 
-    // Get the current time and set as an output
-    const time = new Date().toTimeString()
-    core.setOutput('time', time)
+    if (!VALID_SCOPES.includes(scope)) {
+      throw new Error(
+        `Invalid release_scope "${scope}". Must be one of: ${VALID_SCOPES.join(', ')}`
+      )
+    }
+    if (!VALID_STAGES.includes(stage)) {
+      throw new Error(
+        `Invalid release_stage "${stage}". Must be one of: ${VALID_STAGES.join(', ')}`
+      )
+    }
 
-    // Output the payload for debugging
-    core.info(
-      `The event payload: ${JSON.stringify(github.context.payload, null, 2)}`
+    const today = new Date().toISOString().slice(0, 10)
+
+    const { previousTag, newTag } = await resolveVersions(
+      tagPrefix,
+      scope,
+      stage
     )
+
+    core.info(`Previous tag: ${previousTag ?? '(none)'}`)
+    core.info(`New tag: ${newTag}`)
+
+    const bareVersion = newTag.startsWith(tagPrefix)
+      ? newTag.slice(tagPrefix.length)
+      : newTag
+    const diff = await generateDiff(bareVersion, today, previousTag, trackerUrl)
+
+    core.info(`\nChangelog diff:\n${diff}`)
+
+    core.setOutput('previous-version', previousTag ?? '')
+    core.setOutput('new-version', newTag)
+    core.setOutput('changelog-diff', diff)
+
+    if (dryRun) {
+      core.info('Dry-run mode: skipping git and GitHub operations.')
+      return
+    }
+
+    await configureGit()
+    await prependChangelog(changelogFile, diff)
+    await commitChangelog(changelogFile, newTag)
+    await createTag(newTag)
+
+    const releaseUrl = await createRelease(token, newTag, diff)
+    core.info(`GitHub Release created: ${releaseUrl}`)
   } catch (error) {
-    // Fail the workflow step if an error occurs
     core.setFailed(error.message)
   }
 }

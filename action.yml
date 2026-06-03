@@ -1,18 +1,45 @@
-name: Hello, World!
-description: Greet someone and record the time
-author: GitHub Actions
-
-# Define your inputs here.
+name: Release Action
+description: >-
+  Automates versioning, CHANGELOG generation, and GitHub Releases in one step.
+author: Florian Schaller
 inputs:
-  who-to-greet:
-    description: Who to greet
+  release_scope:
+    description: 'SemVer component to bump: major, minor, or patch'
     required: true
-    default: World
+  release_stage:
+    description: 'Pre-release stage: alpha, beta, rc, or stable'
+    required: false
+    default: stable
+  tag-prefix:
+    description: 'Prefix for git tags (e.g. "v" produces "v1.2.3")'
+    required: false
+    default: ''
+  changelog-file:
+    description: 'Path to the CHANGELOG file to prepend the diff into'
+    required: false
+    default: CHANGELOG.md
+  github-token:
+    description: 'GitHub token for creating releases (use secrets.GITHUB_TOKEN)'
+    required: true
+  tracker-url:
+    description: >-
+      Base URL of your issue tracker for ticket links (e.g.
+      https://yourorg.atlassian.net/browse). Leave empty to render ticket IDs as
+      plain text.
+    required: false
+    default: ''
+  dry-run:
+    description: 'Preview all outputs without touching git or GitHub'
+    required: false
+    default: 'false'
 
-# Define your outputs here.
 outputs:
-  time:
-    description: The time we greeted you
+  previous-version:
+    description: 'The latest tag found before this run (empty string if none)'
+  new-version:
+    description: 'The new tag created by this run'
+  changelog-diff:
+    description: 'The markdown changelog fragment generated for this release'
 
 runs:
   using: node24

@@ -3,27 +3,57 @@ name: Example Workflow
 on:
   workflow_dispatch:
     inputs:
-      who-to-greet:
-        description: Who to greet in the log
+      release_scope:
+        description: 'SemVer component to bump: major, minor, or patch'
         required: true
-        default: World
-        type: string
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      release_stage:
+        description: 'Pre-release stage'
+        required: false
+        default: stable
+        type: choice
+        options:
+          - stable
+          - rc
+          - beta
+          - alpha
+      dry_run:
+        description: 'Preview without pushing or creating a release'
+        required: false
+        default: 'false'
+        type: boolean
 
 permissions:
-  actions: read
-  contents: read
+  contents: write
 
 jobs:
-  say-hello:
-    name: Say Hello
+  release:
+    name: Release
     runs-on: ubuntu-latest
 
     steps:
-      # Change @main to a specific commit SHA or version tag, e.g.:
-      # actions/hello-world-javascript-action@e76147da8e5c81eaf017dede5645551d4b94427b
-      # actions/hello-world-javascript-action@v1.2.3
-      - name: Print to Log
-        id: print-to-log
-        uses: actions/hello-world-javascript-action@main
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          who-to-greet: ${{ inputs.who-to-greet }}
+          fetch-depth: 0
+
+      - name: Run Release Action
+        id: release
+        # Change @main to a specific commit SHA or version tag, e.g.:
+        # stemys/release-action@v1.0.0
+        uses: stemys/release-action@main
+        with:
+          release_scope: ${{ inputs.release_scope }}
+          release_stage: ${{ inputs.release_stage }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: ${{ inputs.dry_run }}
+
+      - name: Print outputs
+        run: |
+          echo "Previous version: ${{ steps.release.outputs.previous-version }}"
+          echo "New version:      ${{ steps.release.outputs.new-version }}"
