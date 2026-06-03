@@ -28923,13 +28923,14 @@ const COMMIT_TYPES = [
 // Commits with no scope are grouped under "General" at the end.
 const SCOPE_REGISTRY = [
     ['admin', 'Hive Admin'],
-    ['erp', 'ERP'],
     ['inv', 'Inventory'],
     ['qc', 'Quality Control'],
     ['shop', 'Shopfloor'],
-    ['rep', 'Reporting/Analytics'],
+    ['cl', 'Closed Loop'],
+    ['rep', 'Reporting'],
     ['iot', 'IoT'],
     ['api', 'API'],
+    ['erp', 'ERP'],
     ['ui-lib', 'UI Library'],
     ['common', 'Common'],
     ['core', 'Core']

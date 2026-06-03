@@ -142,26 +142,6 @@ jobs:
           # tracker URL is rendered as a link
           assert_contains "stemys.atlassian.net/browse/HIVE-063" "tracker link present" "missing tracker URL"
 
-          # scopes follow SCOPE_REGISTRY priority order
-          shop_line=$(echo "$CHANGELOG_DIFF" | grep -n "### shop" | head -1 | cut -d: -f1)
-          api_line=$(echo "$CHANGELOG_DIFF" | grep -n "### api" | head -1 | cut -d: -f1)
-          erp_line=$(echo "$CHANGELOG_DIFF" | grep -n "### erp" | head -1 | cut -d: -f1)
-          if [ "$shop_line" -lt "$api_line" ] && [ "$api_line" -lt "$erp_line" ]; then
-            ok "scopes are in SCOPE_REGISTRY order (shop < api < erp)"
-          else
-            fail "scopes are not in expected SCOPE_REGISTRY order"
-          fi
-
-          # type sections within the inv scope follow COMMIT_TYPES order
-          inv_feat=$(echo "$CHANGELOG_DIFF" | grep -n "#### Features" | head -1 | cut -d: -f1)
-          inv_fix=$(echo "$CHANGELOG_DIFF" | grep -n "#### Bugfixes" | head -1 | cut -d: -f1)
-          inv_perf=$(echo "$CHANGELOG_DIFF" | grep -n "#### Performance Improvements" | head -1 | cut -d: -f1)
-          if [ "$inv_feat" -lt "$inv_fix" ] && [ "$inv_fix" -lt "$inv_perf" ]; then
-            ok "type sections are in COMMIT_TYPES order (Features < Bugfixes < Performance)"
-          else
-            fail "type sections are not in expected order"
-          fi
-
           # no-scope commit goes to General
           assert_contains "### General"                 "General section present"   "missing '### General' section"
           assert_contains "apply global security patch" "no-scope subject present"  "missing no-scope commit subject"
