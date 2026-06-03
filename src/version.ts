@@ -27,6 +27,7 @@ export async function resolveVersions(
     .split('\n')
     .map((t) => t.trim())
     .filter(Boolean)
+    .filter((t) => tagPrefix === '' || t.startsWith(tagPrefix))
     .filter((t) => semver.valid(stripPrefix(t, tagPrefix)))
     .sort((a, b) =>
       semver.rcompare(stripPrefix(a, tagPrefix), stripPrefix(b, tagPrefix))

@@ -78,6 +78,16 @@ describe('resolveVersions', () => {
     expect(result.newTag).toBe('v1.0.1')
   })
 
+  it('ignores tags from other products when a product prefix is set', async () => {
+    mockGetExecOutput.mockResolvedValue({
+      stdout:
+        'report-generator-2.0.0\nhive-suite-1.0.0\nreport-generator-1.5.0\n'
+    })
+    const result = await resolveVersions('hive-suite-', 'patch', 'stable')
+    expect(result.previousTag).toBe('hive-suite-1.0.0')
+    expect(result.newTag).toBe('hive-suite-1.0.1')
+  })
+
   it('respects a custom tag prefix', async () => {
     mockGetExecOutput.mockResolvedValue({ stdout: 'release-1.0.0\n' })
     const result = await resolveVersions('release-', 'minor', 'stable')

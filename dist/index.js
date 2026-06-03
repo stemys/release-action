@@ -36743,6 +36743,7 @@ async function resolveVersions(tagPrefix, scope, stage) {
         .split('\n')
         .map((t) => t.trim())
         .filter(Boolean)
+        .filter((t) => tagPrefix === '' || t.startsWith(tagPrefix))
         .filter((t) => semver.valid(stripPrefix(t, tagPrefix)))
         .sort((a, b) => semver.rcompare(stripPrefix(a, tagPrefix), stripPrefix(b, tagPrefix)));
     const previousTag = allTags.length > 0 ? allTags[0] : null;
