@@ -19,9 +19,12 @@ const mockGenerateDiff =
       previousTag: string | null,
       trackerUrl: string,
       releaseUrl: string,
-      commitUrl: string
+      commitUrl: string,
+      headerContent: string
     ) => Promise<string>
   >();
+const mockReadFile =
+  jest.fn<(path: string, encoding: string) => Promise<string>>();
 const mockConfigureGit = jest.fn<() => Promise<void>>();
 const mockPrependChangelog =
   jest.fn<(filePath: string, diff: string) => Promise<void>>();
@@ -31,6 +34,9 @@ const mockCreateTag = jest.fn<(tagName: string) => Promise<void>>();
 const mockCreateRelease =
   jest.fn<(token: string, tagName: string, body: string) => Promise<string>>();
 
+jest.unstable_mockModule('node:fs/promises', () => ({
+  readFile: mockReadFile
+}));
 jest.unstable_mockModule('@actions/core', () => core);
 jest.unstable_mockModule('../src/version.js', () => ({
   resolveVersions: mockResolveVersions
@@ -56,7 +62,8 @@ const DIFF =
 function setupInputs({
   scope = 'patch',
   stage = 'stable',
-  dryRun = false
+  dryRun = false,
+  headerMarkdownFile = ''
 } = {}): void {
   core.getInput.mockImplementation((name) => {
     return (
@@ -66,7 +73,8 @@ function setupInputs({
           release_stage: stage,
           'tag-prefix': '',
           'changelog-file': 'CHANGELOG.md',
-          'github-token': 'gh-token'
+          'github-token': 'gh-token',
+          'header-markdown-file': headerMarkdownFile
         } as Record<string, string>
       )[name as string] ?? ''
     );
@@ -84,6 +92,7 @@ describe('run', () => {
     mockCreateRelease.mockResolvedValue(
       'https://github.com/owner/repo/releases/tag/1.0.1'
     );
+    mockReadFile.mockResolvedValue('');
   });
 
   afterEach(() => {
@@ -165,6 +174,7 @@ describe('run', () => {
       'v1.0.0',
       '',
       '',
+      '',
       ''
     );
   });
@@ -174,5 +184,38 @@ describe('run', () => {
     mockResolveVersions.mockRejectedValue(new Error('git failure'));
     await run();
     expect(core.setFailed).toHaveBeenCalledWith('git failure');
+  });
+
+  it('does not call readFile when header-markdown-file is empty', async () => {
+    setupInputs({ headerMarkdownFile: '' });
+    await run();
+    expect(mockReadFile).not.toHaveBeenCalled();
+  });
+
+  it('reads the header file and passes its content to generateDiff', async () => {
+    setupInputs({ headerMarkdownFile: 'RELEASE_NOTES.md' });
+    mockReadFile.mockResolvedValue('Custom release notes content.');
+    await run();
+    expect(mockReadFile).toHaveBeenCalledWith('RELEASE_NOTES.md', 'utf-8');
+    expect(mockGenerateDiff).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.anything(),
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+      'Custom release notes content.'
+    );
+  });
+
+  it('calls setFailed when header-markdown-file cannot be read', async () => {
+    setupInputs({ headerMarkdownFile: 'missing.md' });
+    mockReadFile.mockRejectedValue(
+      new Error("ENOENT: no such file or directory, open 'missing.md'")
+    );
+    await run();
+    expect(core.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining('missing.md')
+    );
   });
 });

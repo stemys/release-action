@@ -337,6 +337,79 @@ describe('generateDiff', () => {
     });
   });
 
+  describe('header content', () => {
+    it('inserts header content after the version heading when provided', async () => {
+      mockGetExecOutput.mockResolvedValue({ stdout: '' });
+      const diff = await generateDiff(
+        VERSION,
+        DATE,
+        null,
+        '',
+        '',
+        '',
+        'This release includes important security fixes.'
+      );
+      const headingPos = diff.indexOf(`## ${VERSION}`);
+      const contentPos = diff.indexOf(
+        'This release includes important security fixes.'
+      );
+      expect(contentPos).toBeGreaterThan(headingPos);
+    });
+
+    it('places header content before the first scope section', async () => {
+      mockGetExecOutput.mockResolvedValue({
+        stdout: gitLog('feat(shop): add dashboard [#HIVE-1]')
+      });
+      const diff = await generateDiff(
+        VERSION,
+        DATE,
+        null,
+        '',
+        '',
+        '',
+        'See migration guide before upgrading.'
+      );
+      const contentPos = diff.indexOf('See migration guide before upgrading.');
+      const scopePos = diff.indexOf('### shop');
+      expect(contentPos).toBeGreaterThan(-1);
+      expect(contentPos).toBeLessThan(scopePos);
+    });
+
+    it('includes header content even when there are no commits', async () => {
+      mockGetExecOutput.mockResolvedValue({ stdout: '' });
+      const diff = await generateDiff(
+        VERSION,
+        DATE,
+        null,
+        '',
+        '',
+        '',
+        'No commits this release.'
+      );
+      expect(diff).toContain('No commits this release.');
+    });
+
+    it('trims leading and trailing whitespace from header content', async () => {
+      mockGetExecOutput.mockResolvedValue({ stdout: '' });
+      const diff = await generateDiff(
+        VERSION,
+        DATE,
+        null,
+        '',
+        '',
+        '',
+        '\n\n  Trimmed content.  \n\n'
+      );
+      expect(diff).toBe(`## ${VERSION} — ${DATE}\n\nTrimmed content.\n`);
+    });
+
+    it('does not add extra blank lines when header content is empty', async () => {
+      mockGetExecOutput.mockResolvedValue({ stdout: '' });
+      const diff = await generateDiff(VERSION, DATE, null, '', '', '', '');
+      expect(diff).toBe(`## ${VERSION} — ${DATE}\n`);
+    });
+  });
+
   describe('git range', () => {
     it('uses HEAD when no previousTag is given', async () => {
       mockGetExecOutput.mockResolvedValue({ stdout: '' });

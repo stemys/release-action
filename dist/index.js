@@ -29003,7 +29003,7 @@ async function getRawCommits(ref) {
     })
         .filter((c) => c.hash);
 }
-async function generateDiff(version, date, previousTag, trackerUrl = '', releaseUrl = '', commitUrl = '') {
+async function generateDiff(version, date, previousTag, trackerUrl = '', releaseUrl = '', commitUrl = '', headerContent = '') {
     const rawCommits = await getRawCommits(previousTag);
     const parsed = rawCommits.map(({ hash, message }) => ({
         ...parser.parse(message),
@@ -29034,6 +29034,9 @@ async function generateDiff(version, date, previousTag, trackerUrl = '', release
     }
     const versionLink = releaseUrl ? `[${version}](${releaseUrl})` : version;
     const lines = [`## ${versionLink} — ${date}`, ''];
+    if (headerContent) {
+        lines.push(headerContent.trim(), '');
+    }
     if (scopeMap.size === 0)
         return lines.join('\n');
     // Sort: known scopes by priority index, unknown alphabetically, no-scope last.
@@ -36796,6 +36799,7 @@ async function run() {
         const changelogFile = coreExports.getInput('changelog-file') || 'CHANGELOG.md';
         const token = coreExports.getInput('github-token', { required: true });
         const trackerUrl = coreExports.getInput('tracker-url');
+        const headerMarkdownFile = coreExports.getInput('header-markdown-file');
         const dryRun = coreExports.getBooleanInput('dry-run');
         if (!VALID_SCOPES.includes(scope)) {
             throw new Error(`Invalid release_scope "${scope}". Must be one of: ${VALID_SCOPES.join(', ')}`);
@@ -36816,7 +36820,10 @@ async function run() {
         const changelogReleaseUrl = repo
             ? `${serverUrl}/${repo}/releases/tag/${newTag}`
             : '';
-        const diff = await generateDiff(bareVersion, today, previousTag, trackerUrl, changelogReleaseUrl, commitUrl);
+        const headerContent = headerMarkdownFile
+            ? await readFile(headerMarkdownFile, 'utf-8')
+            : '';
+        const diff = await generateDiff(bareVersion, today, previousTag, trackerUrl, changelogReleaseUrl, commitUrl, headerContent);
         coreExports.info(`\nChangelog diff:\n${diff}`);
         coreExports.setOutput('previous-version', previousTag ?? '');
         coreExports.setOutput('new-version', newTag);

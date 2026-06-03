@@ -28,6 +28,12 @@ inputs:
       plain text.
     required: false
     default: ''
+  header-markdown-file:
+    description: >-
+      Path to a Markdown file whose content is inserted in the changelog after
+      the version heading and before the commit list. Leave empty to omit.
+    required: false
+    default: ''
   dry-run:
     description: 'Preview all outputs without touching git or GitHub'
     required: false

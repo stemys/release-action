@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import { readFile } from 'node:fs/promises';
 import { generateDiff } from './changelog.js';
 import {
   commitChangelog,
@@ -20,6 +21,7 @@ export async function run(): Promise<void> {
     const changelogFile = core.getInput('changelog-file') || 'CHANGELOG.md';
     const token = core.getInput('github-token', { required: true });
     const trackerUrl = core.getInput('tracker-url');
+    const headerMarkdownFile = core.getInput('header-markdown-file');
     const dryRun = core.getBooleanInput('dry-run');
 
     if (!VALID_SCOPES.includes(scope)) {
@@ -54,13 +56,17 @@ export async function run(): Promise<void> {
     const changelogReleaseUrl = repo
       ? `${serverUrl}/${repo}/releases/tag/${newTag}`
       : '';
+    const headerContent = headerMarkdownFile
+      ? await readFile(headerMarkdownFile, 'utf-8')
+      : '';
     const diff = await generateDiff(
       bareVersion,
       today,
       previousTag,
       trackerUrl,
       changelogReleaseUrl,
-      commitUrl
+      commitUrl,
+      headerContent
     );
 
     core.info(`\nChangelog diff:\n${diff}`);

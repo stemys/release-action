@@ -161,7 +161,8 @@ export async function generateDiff(
   previousTag: string | null,
   trackerUrl = '',
   releaseUrl = '',
-  commitUrl = ''
+  commitUrl = '',
+  headerContent = ''
 ): Promise<string> {
   const rawCommits = await getRawCommits(previousTag);
 
@@ -196,6 +197,10 @@ export async function generateDiff(
 
   const versionLink = releaseUrl ? `[${version}](${releaseUrl})` : version;
   const lines = [`## ${versionLink} — ${date}`, ''];
+
+  if (headerContent) {
+    lines.push(headerContent.trim(), '');
+  }
 
   if (scopeMap.size === 0) return lines.join('\n');
 

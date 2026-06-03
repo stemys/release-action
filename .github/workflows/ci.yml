@@ -99,6 +99,7 @@ jobs:
           release_scope: patch
           tracker-url: https://stemys.atlassian.net/browse
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          header-markdown-file: .github/release-header.md
           dry-run: true
 
       - name: Assert outputs
@@ -146,6 +147,14 @@ jobs:
           assert_contains "[1.0.1](https://github.com/stemys/release-action/releases/tag/1.0.1)" \
             "version heading links to release page" \
             "missing release URL link in version heading"
+
+          # header-markdown-file content appears before the commit list
+          assert_contains "Before deploying" \
+            "header file first line present" \
+            "missing first line of header-markdown-file"
+          assert_contains "Deployment checklist" \
+            "header file checklist heading present" \
+            "missing checklist heading from header-markdown-file"
 
           # scopes are grouped with their label
           assert_contains "shop — Shopfloor"  "shop scope present"  "missing 'shop — Shopfloor'"
