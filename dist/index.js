@@ -28965,7 +28965,7 @@ function renderTickets(tickets, trackerUrl) {
     const links = tickets.map((t) => trackerUrl ? `[${t}](${trackerUrl}/${t})` : t);
     return ` (${links.join(', ')})`;
 }
-function formatLine(commit, trackerUrl) {
+function formatLine(commit, trackerUrl, commitUrl) {
     // Breaking commits flagged with ! have subject=null; the text is in notes[0].
     const rawSubject = commit.subject ??
         commit.notes.find((n) => n.title === 'BREAKING CHANGE')?.text ??
@@ -28973,7 +28973,9 @@ function formatLine(commit, trackerUrl) {
     const { cleanSubject, tickets } = extractTickets(rawSubject);
     const ticketStr = renderTickets(tickets, trackerUrl);
     const ref = commit.hash
-        ? ` ([${commit.hash.slice(0, 7)}](../../commit/${commit.hash}))`
+        ? commitUrl
+            ? ` ([${commit.hash.slice(0, 7)}](${commitUrl}/${commit.hash}))`
+            : ` (\`${commit.hash.slice(0, 7)}\`)`
         : '';
     return `- ${cleanSubject}${ticketStr}${ref}`;
 }
@@ -29001,7 +29003,7 @@ async function getRawCommits(ref) {
     })
         .filter((c) => c.hash);
 }
-async function generateDiff(version, date, previousTag, trackerUrl = '', releaseUrl = '') {
+async function generateDiff(version, date, previousTag, trackerUrl = '', releaseUrl = '', commitUrl = '') {
     const rawCommits = await getRawCommits(previousTag);
     const parsed = rawCommits.map(({ hash, message }) => ({
         ...parser.parse(message),
@@ -29058,7 +29060,7 @@ async function generateDiff(version, date, previousTag, trackerUrl = '', release
         if (breaking.length > 0) {
             lines.push('#### ⚠ Breaking Changes', '');
             for (const c of breaking)
-                lines.push(formatLine(c, trackerUrl));
+                lines.push(formatLine(c, trackerUrl, commitUrl));
             lines.push('');
         }
         for (const { type, title } of COMMIT_TYPES.filter((t) => !t.hidden)) {
@@ -29067,7 +29069,7 @@ async function generateDiff(version, date, previousTag, trackerUrl = '', release
                 continue;
             lines.push(`#### ${title}`, '');
             for (const c of commits)
-                lines.push(formatLine(c, trackerUrl));
+                lines.push(formatLine(c, trackerUrl, commitUrl));
             lines.push('');
         }
     }
@@ -36791,6 +36793,7 @@ async function run() {
         const token = coreExports.getInput('github-token', { required: true });
         const trackerUrl = coreExports.getInput('tracker-url');
         const releaseBaseUrl = coreExports.getInput('release-url');
+        const commitUrl = coreExports.getInput('commit-url');
         const dryRun = coreExports.getBooleanInput('dry-run');
         if (!VALID_SCOPES.includes(scope)) {
             throw new Error(`Invalid release_scope "${scope}". Must be one of: ${VALID_SCOPES.join(', ')}`);
@@ -36808,7 +36811,7 @@ async function run() {
         const changelogReleaseUrl = releaseBaseUrl
             ? `${releaseBaseUrl}/${newTag}`
             : '';
-        const diff = await generateDiff(bareVersion, today, previousTag, trackerUrl, changelogReleaseUrl);
+        const diff = await generateDiff(bareVersion, today, previousTag, trackerUrl, changelogReleaseUrl, commitUrl);
         coreExports.info(`\nChangelog diff:\n${diff}`);
         coreExports.setOutput('previous-version', previousTag ?? '');
         coreExports.setOutput('new-version', newTag);

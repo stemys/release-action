@@ -21,6 +21,7 @@ export async function run(): Promise<void> {
     const token = core.getInput('github-token', { required: true })
     const trackerUrl = core.getInput('tracker-url')
     const releaseBaseUrl = core.getInput('release-url')
+    const commitUrl = core.getInput('commit-url')
     const dryRun = core.getBooleanInput('dry-run')
 
     if (!VALID_SCOPES.includes(scope)) {
@@ -56,7 +57,8 @@ export async function run(): Promise<void> {
       today,
       previousTag,
       trackerUrl,
-      changelogReleaseUrl
+      changelogReleaseUrl,
+      commitUrl
     )
 
     core.info(`\nChangelog diff:\n${diff}`)

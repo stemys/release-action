@@ -94,7 +94,11 @@ interface ParsedCommit {
   hash: string
 }
 
-function formatLine(commit: ParsedCommit, trackerUrl: string): string {
+function formatLine(
+  commit: ParsedCommit,
+  trackerUrl: string,
+  commitUrl: string
+): string {
   // Breaking commits flagged with ! have subject=null; the text is in notes[0].
   const rawSubject =
     commit.subject ??
@@ -103,7 +107,9 @@ function formatLine(commit: ParsedCommit, trackerUrl: string): string {
   const { cleanSubject, tickets } = extractTickets(rawSubject)
   const ticketStr = renderTickets(tickets, trackerUrl)
   const ref = commit.hash
-    ? ` ([${commit.hash.slice(0, 7)}](../../commit/${commit.hash}))`
+    ? commitUrl
+      ? ` ([${commit.hash.slice(0, 7)}](${commitUrl}/${commit.hash}))`
+      : ` (\`${commit.hash.slice(0, 7)}\`)`
     : ''
   return `- ${cleanSubject}${ticketStr}${ref}`
 }
@@ -154,7 +160,8 @@ export async function generateDiff(
   date: string,
   previousTag: string | null,
   trackerUrl = '',
-  releaseUrl = ''
+  releaseUrl = '',
+  commitUrl = ''
 ): Promise<string> {
   const rawCommits = await getRawCommits(previousTag)
 
@@ -214,7 +221,7 @@ export async function generateDiff(
 
     if (breaking.length > 0) {
       lines.push('#### ⚠ Breaking Changes', '')
-      for (const c of breaking) lines.push(formatLine(c, trackerUrl))
+      for (const c of breaking) lines.push(formatLine(c, trackerUrl, commitUrl))
       lines.push('')
     }
 
@@ -222,7 +229,7 @@ export async function generateDiff(
       const commits = byType.get(type)
       if (!commits?.length) continue
       lines.push(`#### ${title}`, '')
-      for (const c of commits) lines.push(formatLine(c, trackerUrl))
+      for (const c of commits) lines.push(formatLine(c, trackerUrl, commitUrl))
       lines.push('')
     }
   }

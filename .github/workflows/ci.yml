@@ -89,6 +89,7 @@ jobs:
         uses: ./
         with:
           release_scope: patch
+          commit-url: https://github.com/stemys/release-action/commit
           release-url: https://github.com/stemys/release-action/releases/tag
           tracker-url: https://stemys.atlassian.net/browse
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -129,6 +130,11 @@ jobs:
           else
             fail "expected new-version=1.0.1, got ${{ steps.release.outputs.new-version }}"
           fi
+
+          # commit hash links are absolute
+          assert_contains "https://github.com/stemys/release-action/commit/" \
+            "commit links are absolute" \
+            "commit links must be absolute when commit-url is set"
 
           # version heading is a link to the release page
           assert_contains "[1.0.1](https://github.com/stemys/release-action/releases/tag/1.0.1)" \

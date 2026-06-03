@@ -308,12 +308,30 @@ describe('generateDiff', () => {
   })
 
   describe('commit hash link', () => {
-    it('appends a short hash link to each commit line', async () => {
+    it('renders the hash in backticks when commit-url is not set', async () => {
       mockGetExecOutput.mockResolvedValue({
         stdout: '\x00abcdef1234567\nfeat(shop): shiny thing [#HIVE-1]\n'
       })
       const diff = await generateDiff(VERSION, DATE, null)
-      expect(diff).toContain('([abcdef1](../../commit/abcdef1234567))')
+      expect(diff).toContain('(`abcdef1`)')
+      expect(diff).not.toContain('commit/')
+    })
+
+    it('renders an absolute commit link when commit-url is set', async () => {
+      mockGetExecOutput.mockResolvedValue({
+        stdout: '\x00abcdef1234567\nfeat(shop): shiny thing [#HIVE-1]\n'
+      })
+      const diff = await generateDiff(
+        VERSION,
+        DATE,
+        null,
+        '',
+        '',
+        'https://github.com/stemys/hive-suite-backend/commit'
+      )
+      expect(diff).toContain(
+        '([abcdef1](https://github.com/stemys/hive-suite-backend/commit/abcdef1234567))'
+      )
     })
   })
 

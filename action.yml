@@ -21,6 +21,13 @@ inputs:
   github-token:
     description: 'GitHub token for creating releases (use secrets.GITHUB_TOKEN)'
     required: true
+  commit-url:
+    description: >-
+      Base URL for commit links, including the /commit path segment (e.g.
+      https://github.com/org/repo/commit). The full commit hash is appended
+      automatically. When not set, no commit hash links are rendered.
+    required: false
+    default: ''
   release-url:
     description: >-
       Base URL of your release page. The tag name is appended automatically

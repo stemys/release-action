@@ -21,14 +21,48 @@ Set `dry-run: true` to preview all outputs without touching Git or GitHub.
 
 ## Usage
 
+Minimal example:
+
 ```yaml
+- name: Checkout
+  uses: actions/checkout@v4
+  with:
+    fetch-depth: 0
+
+- name: Release
+  id: release
+  uses: stemys/release-action@main
+  with:
+    release_scope: patch
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+Full example with all inputs:
+
+```yaml
+- name: Checkout
+  uses: actions/checkout@v4
+  with:
+    fetch-depth: 0
+
 - name: Release
   id: release
   uses: stemys/release-action@main
   with:
     release_scope: patch # major | minor | patch
     release_stage: stable # stable | rc | beta | alpha
+    tag-prefix: '' # e.g. "v" to produce v1.2.3
+    changelog-file: CHANGELOG.md
     github-token: ${{ secrets.GITHUB_TOKEN }}
+    commit-url: https://github.com/org/repo/commit
+    release-url: https://github.com/org/repo/releases/tag
+    tracker-url: https://yourorg.atlassian.net/browse
+    dry-run: false
+
+- name: Print outputs
+  run: |
+    echo "Previous version: ${{ steps.release.outputs.previous-version }}"
+    echo "New version:      ${{ steps.release.outputs.new-version }}"
 ```
 
 > **Note:** The workflow must check out the repository with `fetch-depth: 0` so
@@ -43,6 +77,7 @@ Set `dry-run: true` to preview all outputs without touching Git or GitHub.
 | `tag-prefix`     | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)                                                                                                                                             |
 | `changelog-file` | No       | `CHANGELOG.md` | Path to the changelog file                                                                                                                                                                    |
 | `github-token`   | Yes      | —              | Token used to create the GitHub Release                                                                                                                                                       |
+| `commit-url`     | No       | _(empty)_      | Base URL for commit links including `/commit` (e.g. `https://github.com/org/repo/commit`). Hash is appended automatically. When not set, the hash is shown as plain inline code.              |
 | `release-url`    | No       | _(empty)_      | Base URL of your release page — the tag is appended automatically (e.g. `https://github.com/org/repo/releases/tag`). When set, the version heading in the changelog becomes a clickable link. |
 | `tracker-url`    | No       | _(empty)_      | Base URL of your issue tracker — the ticket ID is appended automatically (e.g. `https://yourorg.atlassian.net/browse`). When set, ticket references become clickable links.                   |
 | `dry-run`        | No       | `false`        | Preview outputs without any Git or GitHub writes                                                                                                                                              |
@@ -58,7 +93,7 @@ Set `dry-run: true` to preview all outputs without touching Git or GitHub.
 ## Versioning behaviour
 
 The version base is always the latest **stable** tag (no prerelease suffix).
-Prerelease series are tracked separately:
+Pre-release series are tracked separately:
 
 | Latest stable | Scope   | Stage    | Result       |
 | ------------- | ------- | -------- | ------------ |
