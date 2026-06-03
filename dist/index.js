@@ -28916,7 +28916,7 @@ const COMMIT_TYPES = [
     { type: 'test', title: 'Tests', hidden: true },
     { type: 'build', title: 'Build System', hidden: true },
     { type: 'ci', title: 'CI/CD', hidden: true },
-    { type: 'chore', title: 'Chores', hidden: true },
+    { type: 'chore', title: 'Chores', hidden: true }
 ];
 // Scopes in business priority order.
 // Unknown scopes sort alphabetically after known ones.
@@ -28932,7 +28932,7 @@ const SCOPE_REGISTRY = [
     ['api', 'API'],
     ['ui-lib', 'UI Library'],
     ['common', 'Common'],
-    ['core', 'Core'],
+    ['core', 'Core']
 ];
 const SCOPE_LABEL = new Map(SCOPE_REGISTRY);
 const SCOPE_PRIORITY = new Map(SCOPE_REGISTRY.map(([k], i) => [k, i]));
@@ -28940,8 +28940,17 @@ const VISIBLE_TYPES = new Map(COMMIT_TYPES.filter((t) => !t.hidden).map((t) => [
 const NO_SCOPE_KEY = '__none__';
 // Matches [#HIVE-123, #SUPP-456] at end of subject, tolerates trailing [skip ci].
 const TICKET_RE = /\[(#[A-Z]+-\d+(?:,\s*#[A-Z]+-\d+)*)\](?:\s*\[skip\s+ci\])?\s*$/;
+// Matches --no-issue at end of subject (with optional trailing [skip ci]).
+const NO_ISSUE_RE = /\s*--no-issue(?:\s*\[skip\s+ci\])?\s*$/;
 function extractTickets(subject) {
     const raw = subject ?? '';
+    const noIssueMatch = raw.match(NO_ISSUE_RE);
+    if (noIssueMatch) {
+        return {
+            cleanSubject: raw.slice(0, noIssueMatch.index).trim(),
+            tickets: []
+        };
+    }
     const match = raw.match(TICKET_RE);
     if (!match)
         return { cleanSubject: raw.trim(), tickets: [] };
@@ -28974,14 +28983,8 @@ function formatLine(commit, trackerUrl) {
 const parser = new CommitParser({
     headerPattern: /^(\w*)(?:\(([\w$@.\-*/ ]*)\))?(!)?: (.*)$/,
     headerCorrespondence: ['type', 'scope', 'breaking', 'subject'],
-    breakingHeaderPattern: /^(\w*)(?:\(([\w$@.\-*/ ]*)\))?!: (.*)$/,
+    breakingHeaderPattern: /^(\w*)(?:\(([\w$@.\-*/ ]*)\))?!: (.*)$/
 });
-// Your convention places ! after the type: feat!(scope): message
-// The parser expects the standard placement: feat(scope)!: message
-// This normalizer converts one to the other before parsing.
-function normalizeMessage(message) {
-    return message.replace(/^(\w+)!\(([^)]+)\):/, '$1($2)!:');
-}
 async function getRawCommits(ref) {
     const range = ref ? `${ref}..HEAD` : 'HEAD';
     const { stdout } = await getExecOutput('git', ['log', range, '--format=%x00%H%n%B'], { silent: true });
@@ -29000,7 +29003,7 @@ async function getRawCommits(ref) {
 async function generateDiff(version, date, previousTag, trackerUrl = '') {
     const rawCommits = await getRawCommits(previousTag);
     const parsed = rawCommits.map(({ hash, message }) => ({
-        ...parser.parse(normalizeMessage(message)),
+        ...parser.parse(message),
         hash
     }));
     // Group commits into: scope -> { breaking: [], byType: Map<type, commit[]> }
@@ -29070,7 +29073,11 @@ async function generateDiff(version, date, previousTag, trackerUrl = '') {
 }
 
 async function configureGit() {
-    await exec('git', ['config', 'user.email', 'github-actions[bot]@users.noreply.github.com']);
+    await exec('git', [
+        'config',
+        'user.email',
+        'github-actions[bot]@users.noreply.github.com'
+    ]);
     await exec('git', ['config', 'user.name', 'github-actions[bot]']);
 }
 async function prependChangelog(filePath, diff) {
@@ -36759,7 +36766,9 @@ async function resolveVersions(tagPrefix, scope, stage) {
         });
         if (latestMatchingPre) {
             const preV = stripPrefix(latestMatchingPre, tagPrefix);
-            newVersion = semver.inc(preV, 'prerelease', stage) ?? `${nextStableVersion}-${stage}.0`;
+            newVersion =
+                semver.inc(preV, 'prerelease', stage) ??
+                    `${nextStableVersion}-${stage}.0`;
         }
         else {
             newVersion = `${nextStableVersion}-${stage}.0`;
@@ -36773,7 +36782,7 @@ const VALID_STAGES = ['alpha', 'beta', 'rc', 'stable'];
 async function run() {
     try {
         const scope = coreExports.getInput('release_scope', { required: true });
-        const stage = coreExports.getInput('release_stage') || 'stable';
+        const stage = coreExports.getInput('release_stage', { required: true });
         const tagPrefix = coreExports.getInput('tag-prefix');
         const changelogFile = coreExports.getInput('changelog-file') || 'CHANGELOG.md';
         const token = coreExports.getInput('github-token', { required: true });
