@@ -29096,7 +29096,11 @@ async function prependChangelog(filePath, diff) {
 }
 async function commitChangelog(filePath, tagName) {
     await exec('git', ['add', filePath]);
-    await exec('git', ['commit', '-m', `chore(release): ${tagName}`]);
+    await exec('git', [
+        'commit',
+        '-m',
+        `chore(release): update changelog and release ${tagName}`
+    ]);
 }
 async function createTag(tagName) {
     await exec('git', ['tag', tagName]);
@@ -36792,8 +36796,6 @@ async function run() {
         const changelogFile = coreExports.getInput('changelog-file') || 'CHANGELOG.md';
         const token = coreExports.getInput('github-token', { required: true });
         const trackerUrl = coreExports.getInput('tracker-url');
-        const releaseBaseUrl = coreExports.getInput('release-url');
-        const commitUrl = coreExports.getInput('commit-url');
         const dryRun = coreExports.getBooleanInput('dry-run');
         if (!VALID_SCOPES.includes(scope)) {
             throw new Error(`Invalid release_scope "${scope}". Must be one of: ${VALID_SCOPES.join(', ')}`);
@@ -36801,6 +36803,8 @@ async function run() {
         if (!VALID_STAGES.includes(stage)) {
             throw new Error(`Invalid release_stage "${stage}". Must be one of: ${VALID_STAGES.join(', ')}`);
         }
+        const serverUrl = process.env.GITHUB_SERVER_URL;
+        const repo = process.env.GITHUB_REPOSITORY;
         const today = new Date().toISOString().slice(0, 10);
         const { previousTag, newTag } = await resolveVersions(tagPrefix, scope, stage);
         coreExports.info(`Previous tag: ${previousTag ?? '(none)'}`);
@@ -36808,8 +36812,9 @@ async function run() {
         const bareVersion = newTag.startsWith(tagPrefix)
             ? newTag.slice(tagPrefix.length)
             : newTag;
-        const changelogReleaseUrl = releaseBaseUrl
-            ? `${releaseBaseUrl}/${newTag}`
+        const commitUrl = repo ? `${serverUrl}/${repo}/commit` : '';
+        const changelogReleaseUrl = repo
+            ? `${serverUrl}/${repo}/releases/tag/${newTag}`
             : '';
         const diff = await generateDiff(bareVersion, today, previousTag, trackerUrl, changelogReleaseUrl, commitUrl);
         coreExports.info(`\nChangelog diff:\n${diff}`);

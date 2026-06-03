@@ -1,57 +1,59 @@
-import * as core from '@actions/core'
-import { generateDiff } from './changelog.js'
+import * as core from '@actions/core';
+import { generateDiff } from './changelog.js';
 import {
-  configureGit,
   commitChangelog,
+  configureGit,
   createTag,
   prependChangelog
-} from './git.js'
-import { createRelease } from './github-release.js'
-import { resolveVersions } from './version.js'
+} from './git.js';
+import { createRelease } from './github-release.js';
+import { resolveVersions } from './version.js';
 
-const VALID_SCOPES = ['major', 'minor', 'patch']
-const VALID_STAGES = ['alpha', 'beta', 'rc', 'stable']
+const VALID_SCOPES = ['major', 'minor', 'patch'];
+const VALID_STAGES = ['alpha', 'beta', 'rc', 'stable'];
 
 export async function run(): Promise<void> {
   try {
-    const scope = core.getInput('release_scope', { required: true })
-    const stage = core.getInput('release_stage', { required: true })
-    const tagPrefix = core.getInput('tag-prefix')
-    const changelogFile = core.getInput('changelog-file') || 'CHANGELOG.md'
-    const token = core.getInput('github-token', { required: true })
-    const trackerUrl = core.getInput('tracker-url')
-    const releaseBaseUrl = core.getInput('release-url')
-    const commitUrl = core.getInput('commit-url')
-    const dryRun = core.getBooleanInput('dry-run')
+    const scope = core.getInput('release_scope', { required: true });
+    const stage = core.getInput('release_stage', { required: true });
+    const tagPrefix = core.getInput('tag-prefix');
+    const changelogFile = core.getInput('changelog-file') || 'CHANGELOG.md';
+    const token = core.getInput('github-token', { required: true });
+    const trackerUrl = core.getInput('tracker-url');
+    const dryRun = core.getBooleanInput('dry-run');
 
     if (!VALID_SCOPES.includes(scope)) {
       throw new Error(
         `Invalid release_scope "${scope}". Must be one of: ${VALID_SCOPES.join(', ')}`
-      )
+      );
     }
     if (!VALID_STAGES.includes(stage)) {
       throw new Error(
         `Invalid release_stage "${stage}". Must be one of: ${VALID_STAGES.join(', ')}`
-      )
+      );
     }
 
-    const today = new Date().toISOString().slice(0, 10)
+    const serverUrl = process.env.GITHUB_SERVER_URL;
+    const repo = process.env.GITHUB_REPOSITORY;
+
+    const today = new Date().toISOString().slice(0, 10);
 
     const { previousTag, newTag } = await resolveVersions(
       tagPrefix,
       scope,
       stage
-    )
+    );
 
-    core.info(`Previous tag: ${previousTag ?? '(none)'}`)
-    core.info(`New tag: ${newTag}`)
+    core.info(`Previous tag: ${previousTag ?? '(none)'}`);
+    core.info(`New tag: ${newTag}`);
 
     const bareVersion = newTag.startsWith(tagPrefix)
       ? newTag.slice(tagPrefix.length)
-      : newTag
-    const changelogReleaseUrl = releaseBaseUrl
-      ? `${releaseBaseUrl}/${newTag}`
-      : ''
+      : newTag;
+    const commitUrl = repo ? `${serverUrl}/${repo}/commit` : '';
+    const changelogReleaseUrl = repo
+      ? `${serverUrl}/${repo}/releases/tag/${newTag}`
+      : '';
     const diff = await generateDiff(
       bareVersion,
       today,
@@ -59,27 +61,27 @@ export async function run(): Promise<void> {
       trackerUrl,
       changelogReleaseUrl,
       commitUrl
-    )
+    );
 
-    core.info(`\nChangelog diff:\n${diff}`)
+    core.info(`\nChangelog diff:\n${diff}`);
 
-    core.setOutput('previous-version', previousTag ?? '')
-    core.setOutput('new-version', newTag)
-    core.setOutput('changelog-diff', diff)
+    core.setOutput('previous-version', previousTag ?? '');
+    core.setOutput('new-version', newTag);
+    core.setOutput('changelog-diff', diff);
 
     if (dryRun) {
-      core.info('Dry-run mode: skipping git and GitHub operations.')
-      return
+      core.info('Dry-run mode: skipping git and GitHub operations.');
+      return;
     }
 
-    await configureGit()
-    await prependChangelog(changelogFile, diff)
-    await commitChangelog(changelogFile, newTag)
-    await createTag(newTag)
+    await configureGit();
+    await prependChangelog(changelogFile, diff);
+    await commitChangelog(changelogFile, newTag);
+    await createTag(newTag);
 
-    const releaseUrl = await createRelease(token, newTag, diff)
-    core.info(`GitHub Release created: ${releaseUrl}`)
+    const releaseUrl = await createRelease(token, newTag, diff);
+    core.info(`GitHub Release created: ${releaseUrl}`);
   } catch (error) {
-    core.setFailed((error as Error).message)
+    core.setFailed((error as Error).message);
   }
 }

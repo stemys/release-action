@@ -54,8 +54,6 @@ Full example with all inputs:
     tag-prefix: '' # e.g. "v" to produce v1.2.3
     changelog-file: CHANGELOG.md
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    commit-url: https://github.com/org/repo/commit
-    release-url: https://github.com/org/repo/releases/tag
     tracker-url: https://yourorg.atlassian.net/browse
     dry-run: false
 
@@ -70,17 +68,19 @@ Full example with all inputs:
 
 ## Inputs
 
-| Input            | Required | Default        | Description                                                                                                                                                                                   |
-| ---------------- | -------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `release_scope`  | Yes      | —              | SemVer component to bump: `major`, `minor`, `patch`                                                                                                                                           |
-| `release_stage`  | Yes      | `stable`       | Prerelease stage: `stable`, `rc`, `beta`, `alpha`                                                                                                                                             |
-| `tag-prefix`     | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)                                                                                                                                             |
-| `changelog-file` | No       | `CHANGELOG.md` | Path to the changelog file                                                                                                                                                                    |
-| `github-token`   | Yes      | —              | Token used to create the GitHub Release                                                                                                                                                       |
-| `commit-url`     | No       | _(empty)_      | Base URL for commit links including `/commit` (e.g. `https://github.com/org/repo/commit`). Hash is appended automatically. When not set, the hash is shown as plain inline code.              |
-| `release-url`    | No       | _(empty)_      | Base URL of your release page — the tag is appended automatically (e.g. `https://github.com/org/repo/releases/tag`). When set, the version heading in the changelog becomes a clickable link. |
-| `tracker-url`    | No       | _(empty)_      | Base URL of your issue tracker — the ticket ID is appended automatically (e.g. `https://yourorg.atlassian.net/browse`). When set, ticket references become clickable links.                   |
-| `dry-run`        | No       | `false`        | Preview outputs without any Git or GitHub writes                                                                                                                                              |
+| Input            | Required | Default        | Description                                                                                                                                                                 |
+| ---------------- | -------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release_scope`  | Yes      | —              | SemVer component to bump: `major`, `minor`, `patch`                                                                                                                         |
+| `release_stage`  | Yes      | `stable`       | Prerelease stage: `stable`, `rc`, `beta`, `alpha`                                                                                                                           |
+| `tag-prefix`     | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)                                                                                                                           |
+| `changelog-file` | No       | `CHANGELOG.md` | Path to the changelog file                                                                                                                                                  |
+| `github-token`   | Yes      | —              | Token used to create the GitHub Release                                                                                                                                     |
+| `tracker-url`    | No       | _(empty)_      | Base URL of your issue tracker — the ticket ID is appended automatically (e.g. `https://yourorg.atlassian.net/browse`). When set, ticket references become clickable links. |
+| `dry-run`        | No       | `false`        | Preview outputs without any Git or GitHub writes                                                                                                                            |
+
+Commit hash links and the version heading link are derived automatically from
+the `GITHUB_SERVER_URL` and `GITHUB_REPOSITORY` environment variables injected
+by GitHub Actions. No extra configuration is needed.
 
 ## Outputs
 

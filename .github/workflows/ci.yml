@@ -97,8 +97,6 @@ jobs:
         uses: ./
         with:
           release_scope: patch
-          commit-url: https://github.com/stemys/release-action/commit
-          release-url: https://github.com/stemys/release-action/releases/tag
           tracker-url: https://stemys.atlassian.net/browse
           github-token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
@@ -108,7 +106,7 @@ jobs:
           CHANGELOG_DIFF: ${{ steps.release.outputs.changelog-diff }}
         run: |
           echo "previous-version : ${{ steps.release.outputs.previous-version }}"
-          echo "new-version       : ${{ steps.release.outputs.new-version }}"
+          echo "new-version      : ${{ steps.release.outputs.new-version }}"
           echo ""
           echo "changelog-diff:"
           echo "$CHANGELOG_DIFF"

@@ -1,8 +1,8 @@
-import type { Options } from 'conventional-commits-parser'
+import type { Options } from 'conventional-commits-parser';
 
 declare module 'conventional-commits-parser' {
   class CommitParser {
-    constructor(options?: Options)
-    parse(commit: string): Commit
+    constructor(options?: Options);
+    parse(commit: string): Commit;
   }
 }

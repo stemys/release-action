@@ -19,6 +19,6 @@ const jestConfig = {
     '^.+\\.ts$': ['ts-jest', { useESM: true }]
   },
   verbose: true
-}
+};
 
-export default jestConfig
+export default jestConfig;
