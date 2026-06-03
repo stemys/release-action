@@ -17,7 +17,7 @@ export async function resolveVersions(
 ): Promise<VersionResult> {
   const { stdout } = await getExecOutput(
     'git',
-    ['tag', '--list', `${tagPrefix}*`],
+    ['tag', '--list', '--merged', 'HEAD', `${tagPrefix}*`],
     {
       silent: true
     }

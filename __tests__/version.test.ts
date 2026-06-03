@@ -78,6 +78,16 @@ describe('resolveVersions', () => {
     expect(result.newTag).toBe('v1.0.1')
   })
 
+  it('passes --merged HEAD to git so only ancestor tags are considered', async () => {
+    mockGetExecOutput.mockResolvedValue({ stdout: '' })
+    await resolveVersions('v', 'patch', 'stable')
+    expect(mockGetExecOutput).toHaveBeenCalledWith(
+      'git',
+      expect.arrayContaining(['--merged', 'HEAD']),
+      expect.any(Object)
+    )
+  })
+
   it('ignores tags from other products when a product prefix is set', async () => {
     mockGetExecOutput.mockResolvedValue({
       stdout:

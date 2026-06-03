@@ -36739,7 +36739,7 @@ function stripPrefix(tag, prefix) {
     return tag.startsWith(prefix) ? tag.slice(prefix.length) : tag;
 }
 async function resolveVersions(tagPrefix, scope, stage) {
-    const { stdout } = await getExecOutput('git', ['tag', '--list', `${tagPrefix}*`], {
+    const { stdout } = await getExecOutput('git', ['tag', '--list', '--merged', 'HEAD', `${tagPrefix}*`], {
         silent: true
     });
     const allTags = stdout
