@@ -152,7 +152,9 @@ describe('generateDiff', () => {
         )
       })
       const diff = await generateDiff(VERSION, DATE, null)
-      expect(diff.indexOf('#### Features')).toBeLessThan(diff.indexOf('#### Bugfixes'))
+      expect(diff.indexOf('#### Features')).toBeLessThan(
+        diff.indexOf('#### Bugfixes')
+      )
       expect(diff.indexOf('#### Bugfixes')).toBeLessThan(
         diff.indexOf('#### Performance Improvements')
       )
