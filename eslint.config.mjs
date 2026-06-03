@@ -67,6 +67,7 @@ export default [
       '@typescript-eslint': typescriptPlugin
     },
     rules: {
+      'no-undef': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_' }

@@ -60,10 +60,14 @@ jobs:
           git config user.email "ci@github.com"
           git config user.name "CI Test"
 
-          # Baseline tag — becomes previous-version
-          git tag 1.0.0
+          # v0.9.0 — older release, commits here must NOT appear in the changelog
+          git tag 0.9.0
+          git commit --allow-empty -m "feat(erp): add purchase order workflow [#HIVE-010]"
+          git commit --allow-empty -m "fix(shop): fix display bug on mobile [#HIVE-011]"
+          git commit --allow-empty -m "chore(core): upgrade node version [#HIVE-012]"
 
-          # Commits since the tag: mixed scopes, types, tickets, and a hidden chore
+          # v1.0.0 — the release the action will use as previous-version
+          git tag 1.0.0
           git commit --allow-empty -m "feat(shop): add machine status dashboard [#HIVE-063]"
           git commit --allow-empty -m "fix(erp): resolve inventory sync on partial picks [#HIVE-300]"
           git commit --allow-empty -m "fix(shop): correct task assignment on shift change [#HIVE-301, #SUPP-012]"
@@ -148,6 +152,14 @@ jobs:
 
           assert_contains "fix typo in shared utility" "--no-issue commit subject present" "missing --no-issue commit subject"
 
+          # commits before 1.0.0 must not appear in the changelog
+          if echo "$CHANGELOG_DIFF" | grep -q "purchase order workflow"; then
+            fail "commit from before previous-version must not appear in changelog"
+          else
+            ok "pre-1.0.0 commits are correctly excluded"
+          fi
+
+          # chore commits must not appear in the changelog
           if echo "$CHANGELOG_DIFF" | grep -q "bump dependencies"; then
             fail "chore commit must be hidden from changelog"
           else
