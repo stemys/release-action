@@ -15,7 +15,7 @@ const VALID_STAGES = ['alpha', 'beta', 'rc', 'stable']
 export async function run(): Promise<void> {
   try {
     const scope = core.getInput('release_scope', { required: true })
-    const stage = core.getInput('release_stage') || 'stable'
+    const stage = core.getInput('release_stage', { required: true })
     const tagPrefix = core.getInput('tag-prefix')
     const changelogFile = core.getInput('changelog-file') || 'CHANGELOG.md'
     const token = core.getInput('github-token', { required: true })

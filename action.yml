@@ -8,7 +8,7 @@ inputs:
     required: true
   release_stage:
     description: 'Pre-release stage: alpha, beta, rc, or stable'
-    required: false
+    required: true
     default: stable
   tag-prefix:
     description: 'Prefix for git tags (e.g. "v" produces "v1.2.3")'

@@ -14,7 +14,7 @@ on:
           - major
       release_stage:
         description: 'Pre-release stage'
-        required: false
+        required: true
         default: stable
         type: choice
         options:
