@@ -17,7 +17,8 @@ const mockGenerateDiff =
       version: string,
       date: string,
       previousTag: string | null,
-      trackerUrl: string
+      trackerUrl: string,
+      releaseUrl: string
     ) => Promise<string>
   >()
 const mockConfigureGit = jest.fn<() => Promise<void>>()
@@ -161,6 +162,7 @@ describe('run', () => {
       '1.0.1',
       expect.any(String),
       'v1.0.0',
+      '',
       ''
     )
   })

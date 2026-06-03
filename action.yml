@@ -21,6 +21,13 @@ inputs:
   github-token:
     description: 'GitHub token for creating releases (use secrets.GITHUB_TOKEN)'
     required: true
+  release-url:
+    description: >-
+      Base URL of your release page. The tag name is appended automatically
+      (e.g. https://github.com/org/repo/releases/tag). When set, the version
+      heading in the changelog becomes a link to the release.
+    required: false
+    default: ''
   tracker-url:
     description: >-
       Base URL of your issue tracker for ticket links (e.g.

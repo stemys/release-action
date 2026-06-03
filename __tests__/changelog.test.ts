@@ -30,13 +30,27 @@ describe('generateDiff', () => {
     it('uses an em dash and no tag prefix in the version heading', async () => {
       mockGetExecOutput.mockResolvedValue({ stdout: '' })
       const diff = await generateDiff(VERSION, DATE, null)
-      expect(diff).toContain(`## [${VERSION}] — ${DATE}`)
+      expect(diff).toContain(`## ${VERSION} — ${DATE}`)
     })
 
     it('returns only the header when there are no visible commits', async () => {
       mockGetExecOutput.mockResolvedValue({ stdout: '' })
       const diff = await generateDiff(VERSION, DATE, null)
       expect(diff).not.toContain('###')
+    })
+
+    it('renders the version as a plain string when no release-url is given', async () => {
+      mockGetExecOutput.mockResolvedValue({ stdout: '' })
+      const diff = await generateDiff(VERSION, DATE, null)
+      expect(diff).toContain(`## ${VERSION} — ${DATE}`)
+      expect(diff).not.toContain(`[${VERSION}](`)
+    })
+
+    it('renders the version as a link when release-url is given', async () => {
+      mockGetExecOutput.mockResolvedValue({ stdout: '' })
+      const releaseUrl = `https://github.com/stemys/hive-suite-backend/releases/tag/${VERSION}`
+      const diff = await generateDiff(VERSION, DATE, null, '', releaseUrl)
+      expect(diff).toContain(`## [${VERSION}](${releaseUrl}) — ${DATE}`)
     })
   })
 

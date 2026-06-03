@@ -29001,7 +29001,7 @@ async function getRawCommits(ref) {
     })
         .filter((c) => c.hash);
 }
-async function generateDiff(version, date, previousTag, trackerUrl = '') {
+async function generateDiff(version, date, previousTag, trackerUrl = '', releaseUrl = '') {
     const rawCommits = await getRawCommits(previousTag);
     const parsed = rawCommits.map(({ hash, message }) => ({
         ...parser.parse(message),
@@ -29030,7 +29030,8 @@ async function generateDiff(version, date, previousTag, trackerUrl = '') {
             bucket.byType.get(type).push(commit);
         }
     }
-    const lines = [`## [${version}] — ${date}`, ''];
+    const versionLink = releaseUrl ? `[${version}](${releaseUrl})` : version;
+    const lines = [`## ${versionLink} — ${date}`, ''];
     if (scopeMap.size === 0)
         return lines.join('\n');
     // Sort: known scopes by priority index, unknown alphabetically, no-scope last.
@@ -36789,6 +36790,7 @@ async function run() {
         const changelogFile = coreExports.getInput('changelog-file') || 'CHANGELOG.md';
         const token = coreExports.getInput('github-token', { required: true });
         const trackerUrl = coreExports.getInput('tracker-url');
+        const releaseBaseUrl = coreExports.getInput('release-url');
         const dryRun = coreExports.getBooleanInput('dry-run');
         if (!VALID_SCOPES.includes(scope)) {
             throw new Error(`Invalid release_scope "${scope}". Must be one of: ${VALID_SCOPES.join(', ')}`);
@@ -36803,7 +36805,10 @@ async function run() {
         const bareVersion = newTag.startsWith(tagPrefix)
             ? newTag.slice(tagPrefix.length)
             : newTag;
-        const diff = await generateDiff(bareVersion, today, previousTag, trackerUrl);
+        const changelogReleaseUrl = releaseBaseUrl
+            ? `${releaseBaseUrl}/${newTag}`
+            : '';
+        const diff = await generateDiff(bareVersion, today, previousTag, trackerUrl, changelogReleaseUrl);
         coreExports.info(`\nChangelog diff:\n${diff}`);
         coreExports.setOutput('previous-version', previousTag ?? '');
         coreExports.setOutput('new-version', newTag);

@@ -153,7 +153,8 @@ export async function generateDiff(
   version: string,
   date: string,
   previousTag: string | null,
-  trackerUrl = ''
+  trackerUrl = '',
+  releaseUrl = ''
 ): Promise<string> {
   const rawCommits = await getRawCommits(previousTag)
 
@@ -186,7 +187,8 @@ export async function generateDiff(
     }
   }
 
-  const lines = [`## [${version}] — ${date}`, '']
+  const versionLink = releaseUrl ? `[${version}](${releaseUrl})` : version
+  const lines = [`## ${versionLink} — ${date}`, '']
 
   if (scopeMap.size === 0) return lines.join('\n')
 

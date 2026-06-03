@@ -20,6 +20,7 @@ export async function run(): Promise<void> {
     const changelogFile = core.getInput('changelog-file') || 'CHANGELOG.md'
     const token = core.getInput('github-token', { required: true })
     const trackerUrl = core.getInput('tracker-url')
+    const releaseBaseUrl = core.getInput('release-url')
     const dryRun = core.getBooleanInput('dry-run')
 
     if (!VALID_SCOPES.includes(scope)) {
@@ -47,7 +48,16 @@ export async function run(): Promise<void> {
     const bareVersion = newTag.startsWith(tagPrefix)
       ? newTag.slice(tagPrefix.length)
       : newTag
-    const diff = await generateDiff(bareVersion, today, previousTag, trackerUrl)
+    const changelogReleaseUrl = releaseBaseUrl
+      ? `${releaseBaseUrl}/${newTag}`
+      : ''
+    const diff = await generateDiff(
+      bareVersion,
+      today,
+      previousTag,
+      trackerUrl,
+      changelogReleaseUrl
+    )
 
     core.info(`\nChangelog diff:\n${diff}`)
 

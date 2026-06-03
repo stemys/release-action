@@ -89,6 +89,7 @@ jobs:
         uses: ./
         with:
           release_scope: patch
+          release-url: https://github.com/stemys/release-action/releases/tag
           tracker-url: https://stemys.atlassian.net/browse
           github-token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
@@ -128,6 +129,11 @@ jobs:
           else
             fail "expected new-version=1.0.1, got ${{ steps.release.outputs.new-version }}"
           fi
+
+          # version heading is a link to the release page
+          assert_contains "[1.0.1](https://github.com/stemys/release-action/releases/tag/1.0.1)" \
+            "version heading links to release page" \
+            "missing release URL link in version heading"
 
           # scopes are grouped with their label
           assert_contains "shop — Shopfloor"  "shop scope present"  "missing 'shop — Shopfloor'"
