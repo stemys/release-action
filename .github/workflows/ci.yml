@@ -55,15 +55,117 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Test Local Action (dry-run)
-        id: test-action
+      - name: Set up test git history
+        run: |
+          git config user.email "ci@github.com"
+          git config user.name "CI Test"
+
+          # Baseline tag — becomes previous-version
+          git tag 1.0.0
+
+          # Commits since the tag: mixed scopes, types, tickets, and a hidden chore
+          git commit --allow-empty -m "feat(shop): add machine status dashboard [#HIVE-063]"
+          git commit --allow-empty -m "fix(erp): resolve inventory sync on partial picks [#HIVE-300]"
+          git commit --allow-empty -m "fix(shop): correct task assignment on shift change [#HIVE-301, #SUPP-012]"
+          git commit --allow-empty -m "feat(api)!: remove deprecated v1 endpoints [#HIVE-200]"
+          git commit --allow-empty -m "doc(api): update endpoint documentation [#HIVE-099]"
+          git commit --allow-empty -m "feat(inv): add bulk import from CSV [#HIVE-089] [skip ci]"
+          git commit --allow-empty \
+            -m "feat(qc): add quality control metrics dashboard [#HIVE-150]" \
+            -m "Introduces a new real-time dashboard for QC operators. Includes trend charts, SPC limits, and defect categorisation. The body of this commit should not appear in the changelog — only the subject line is used."
+          git commit --allow-empty -m "fix(common): fix typo in shared utility --no-issue"
+          git commit --allow-empty -m "chore(core): bump dependencies [#HIVE-001]"
+
+      - name: Run Release Action (dry-run)
+        id: release
         uses: ./
         with:
           release_scope: patch
+          tracker-url: https://stemys.atlassian.net/browse
           github-token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: true
 
-      - name: Print Outputs
+      - name: Assert outputs
+        env:
+          CHANGELOG_DIFF: ${{ steps.release.outputs.changelog-diff }}
         run: |
-          echo "Previous version: ${{ steps.test-action.outputs.previous-version }}"
-          echo "New version:      ${{ steps.test-action.outputs.new-version }}"
+          echo "previous-version : ${{ steps.release.outputs.previous-version }}"
+          echo "new-version       : ${{ steps.release.outputs.new-version }}"
+          echo ""
+          echo "changelog-diff:"
+          echo "$CHANGELOG_DIFF"
+          echo ""
+
+          fail() { echo "FAIL: $1"; exit 1; }
+          ok()   { echo "OK  : $1"; }
+
+          [ "${{ steps.release.outputs.previous-version }}" = "1.0.0" ] \
+            && ok "previous-version is 1.0.0" \
+            || fail "expected previous-version=1.0.0, got ${{ steps.release.outputs.previous-version }}"
+
+          [ "${{ steps.release.outputs.new-version }}" = "1.0.1" ] \
+            && ok "new-version is 1.0.1" \
+            || fail "expected new-version=1.0.1, got ${{ steps.release.outputs.new-version }}"
+
+          echo "$CHANGELOG_DIFF" | grep -q "shop — Shopfloor" \
+            && ok "shop scope present" || fail "missing 'shop — Shopfloor'"
+
+          echo "$CHANGELOG_DIFF" | grep -q "erp — ERP" \
+            && ok "erp scope present" || fail "missing 'erp — ERP'"
+
+          echo "$CHANGELOG_DIFF" | grep -q "api — API" \
+            && ok "api scope present" || fail "missing 'api — API'"
+
+          echo "$CHANGELOG_DIFF" | grep -q "Breaking Changes" \
+            && ok "breaking changes present" || fail "missing '⚠ Breaking Changes'"
+
+          echo "$CHANGELOG_DIFF" | grep -q "HIVE-063" \
+            && ok "ticket HIVE-063 present" || fail "missing ticket HIVE-063"
+
+          echo "$CHANGELOG_DIFF" | grep -q "HIVE-301" \
+            && ok "ticket HIVE-301 present" || fail "missing ticket HIVE-301"
+
+          echo "$CHANGELOG_DIFF" | grep -q "SUPP-012" \
+            && ok "ticket SUPP-012 present" || fail "missing ticket SUPP-012"
+
+          echo "$CHANGELOG_DIFF" | grep -q "stemys.atlassian.net/browse/HIVE-063" \
+            && ok "tracker link present" || fail "missing tracker URL"
+
+          echo "$CHANGELOG_DIFF" | grep -q "HIVE-089" \
+            && ok "ticket HIVE-089 (skip-ci commit) present" || fail "missing ticket HIVE-089"
+
+          echo "$CHANGELOG_DIFF" | grep -q "HIVE-150" \
+            && ok "ticket HIVE-150 (multiline commit) present" || fail "missing ticket HIVE-150"
+
+          echo "$CHANGELOG_DIFF" | grep -q "quality control metrics dashboard" \
+            && ok "multiline commit subject present" || fail "missing multiline commit subject"
+
+          if echo "$CHANGELOG_DIFF" | grep -q "SPC limits"; then
+            fail "commit body must not appear in the changelog"
+          else
+            ok "commit body is correctly ignored"
+          fi
+
+          echo "$CHANGELOG_DIFF" | grep -q "fix typo in shared utility" \
+            && ok "--no-issue commit subject present" || fail "missing --no-issue commit subject"
+
+          if echo "$CHANGELOG_DIFF" | grep -q "\-\-no-issue"; then
+            fail "--no-issue marker must be stripped from the changelog"
+          else
+            ok "--no-issue marker is correctly stripped"
+          fi
+
+          if echo "$CHANGELOG_DIFF" | grep -q "\[skip ci\]"; then
+            fail "[skip ci] must be stripped from the changelog"
+          else
+            ok "[skip ci] is correctly stripped"
+          fi
+
+          if echo "$CHANGELOG_DIFF" | grep -q "bump dependencies"; then
+            fail "chore commit must be hidden from changelog"
+          else
+            ok "chore commit is correctly hidden"
+          fi
+
+          echo ""
+          echo "All assertions passed."

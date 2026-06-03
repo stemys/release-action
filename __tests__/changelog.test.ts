@@ -212,6 +212,26 @@ describe('generateDiff', () => {
       expect(diff).toContain(`[SUPP-012](${TRACKER}/SUPP-012)`)
     })
 
+    it('strips --no-issue and shows no ticket reference', async () => {
+      mockGetExecOutput.mockResolvedValue({
+        stdout: gitLog('fix(common): fix typo in shared utility --no-issue')
+      })
+      const diff = await generateDiff(VERSION, DATE, null, TRACKER)
+      expect(diff).toContain('fix typo in shared utility')
+      expect(diff).not.toContain('--no-issue')
+      expect(diff).not.toContain('stemys.atlassian.net')
+    })
+
+    it('strips --no-issue followed by [skip ci]', async () => {
+      mockGetExecOutput.mockResolvedValue({
+        stdout: gitLog('fix(common): hotfix --no-issue [skip ci]')
+      })
+      const diff = await generateDiff(VERSION, DATE, null)
+      expect(diff).toContain('hotfix')
+      expect(diff).not.toContain('--no-issue')
+      expect(diff).not.toContain('[skip ci]')
+    })
+
     it('strips [skip ci] from the commit line', async () => {
       mockGetExecOutput.mockResolvedValue({
         stdout: gitLog('feat(inv): bulk import [#HIVE-089] [skip ci]')
@@ -219,6 +239,19 @@ describe('generateDiff', () => {
       const diff = await generateDiff(VERSION, DATE, null)
       expect(diff).toContain('bulk import')
       expect(diff).not.toContain('[skip ci]')
+    })
+  })
+
+  describe('commit body', () => {
+    it('uses only the subject line and ignores the body', async () => {
+      mockGetExecOutput.mockResolvedValue({
+        stdout:
+          '\x00abcdef1234567\nfeat(qc): add quality metrics [#HIVE-150]\n\nThis body paragraph describes implementation details.\nIt spans multiple lines and should not appear in the changelog.\n'
+      })
+      const diff = await generateDiff(VERSION, DATE, null)
+      expect(diff).toContain('add quality metrics')
+      expect(diff).not.toContain('body paragraph')
+      expect(diff).not.toContain('implementation details')
     })
   })
 

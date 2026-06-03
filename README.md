@@ -37,7 +37,7 @@ Set `dry-run: true` to preview all outputs without touching git or GitHub.
 ## Inputs
 
 | Input            | Required | Default        | Description                                         |
-| ---------------- |----------| -------------- | --------------------------------------------------- |
+| ---------------- | -------- | -------------- | --------------------------------------------------- |
 | `release_scope`  | Yes      | —              | SemVer component to bump: `major`, `minor`, `patch` |
 | `release_stage`  | Yes      | `stable`       | Pre-release stage: `stable`, `rc`, `beta`, `alpha`  |
 | `tag-prefix`     | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)   |

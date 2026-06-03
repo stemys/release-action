@@ -46,6 +46,9 @@ const NO_SCOPE_KEY = '__none__'
 const TICKET_RE =
   /\[(#[A-Z]+-\d+(?:,\s*#[A-Z]+-\d+)*)\](?:\s*\[skip\s+ci\])?\s*$/
 
+// Matches --no-issue at end of subject (with optional trailing [skip ci]).
+const NO_ISSUE_RE = /\s*--no-issue(?:\s*\[skip\s+ci\])?\s*$/
+
 interface TicketExtraction {
   cleanSubject: string
   tickets: string[]
@@ -53,6 +56,15 @@ interface TicketExtraction {
 
 function extractTickets(subject: string | null | undefined): TicketExtraction {
   const raw = subject ?? ''
+
+  const noIssueMatch = raw.match(NO_ISSUE_RE)
+  if (noIssueMatch) {
+    return {
+      cleanSubject: raw.slice(0, noIssueMatch.index).trim(),
+      tickets: []
+    }
+  }
+
   const match = raw.match(TICKET_RE)
   if (!match) return { cleanSubject: raw.trim(), tickets: [] }
   const cleanSubject = raw.slice(0, match.index).trim()
