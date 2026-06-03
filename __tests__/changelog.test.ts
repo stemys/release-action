@@ -82,17 +82,17 @@ describe('generateDiff', () => {
     it('sorts known scopes in business priority order', async () => {
       mockGetExecOutput.mockResolvedValue({
         stdout: gitLog(
-          'feat(api): new endpoint [#HIVE-1]',
-          'feat(erp): erp change [#HIVE-2]',
+          'feat(erp): erp change [#HIVE-1]',
+          'feat(api): new endpoint [#HIVE-2]',
           'feat(shop): shop change [#HIVE-3]'
         )
       })
       const diff = await generateDiff(VERSION, DATE, null)
-      const erpPos = diff.indexOf('### erp')
       const shopPos = diff.indexOf('### shop')
       const apiPos = diff.indexOf('### api')
-      expect(erpPos).toBeLessThan(shopPos)
+      const erpPos = diff.indexOf('### erp')
       expect(shopPos).toBeLessThan(apiPos)
+      expect(apiPos).toBeLessThan(erpPos)
     })
 
     it('places unknown scopes alphabetically before General', async () => {
@@ -120,6 +120,42 @@ describe('generateDiff', () => {
       })
       const diff = await generateDiff(VERSION, DATE, null)
       expect(diff.indexOf('### shop')).toBeLessThan(diff.indexOf('### General'))
+    })
+  })
+
+  describe('ordering', () => {
+    it('renders type sections within a scope in COMMIT_TYPES order', async () => {
+      mockGetExecOutput.mockResolvedValue({
+        stdout: gitLog(
+          'perf(inv): optimise stock query [#HIVE-3]',
+          'fix(inv): fix data loss bug [#HIVE-2]',
+          'feat(inv): add export feature [#HIVE-1]'
+        )
+      })
+      const diff = await generateDiff(VERSION, DATE, null)
+      const featPos = diff.indexOf('#### Features')
+      const bugfixPos = diff.indexOf('#### Bugfixes')
+      const perfPos = diff.indexOf('#### Performance Improvements')
+      expect(featPos).toBeGreaterThan(-1)
+      expect(bugfixPos).toBeGreaterThan(-1)
+      expect(perfPos).toBeGreaterThan(-1)
+      expect(featPos).toBeLessThan(bugfixPos)
+      expect(bugfixPos).toBeLessThan(perfPos)
+    })
+
+    it('renders type sections consistently regardless of commit order in git log', async () => {
+      mockGetExecOutput.mockResolvedValue({
+        stdout: gitLog(
+          'feat(inv): add export feature [#HIVE-1]',
+          'perf(inv): optimise stock query [#HIVE-3]',
+          'fix(inv): fix data loss bug [#HIVE-2]'
+        )
+      })
+      const diff = await generateDiff(VERSION, DATE, null)
+      expect(diff.indexOf('#### Features')).toBeLessThan(diff.indexOf('#### Bugfixes'))
+      expect(diff.indexOf('#### Bugfixes')).toBeLessThan(
+        diff.indexOf('#### Performance Improvements')
+      )
     })
   })
 

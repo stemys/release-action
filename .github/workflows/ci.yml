@@ -72,8 +72,10 @@ jobs:
           git commit --allow-empty -m "fix(erp): resolve inventory sync on partial picks [#HIVE-300]"
           git commit --allow-empty -m "fix(shop): correct task assignment on shift change [#HIVE-301, #SUPP-012]"
           git commit --allow-empty -m "feat(api)!: remove deprecated v1 endpoints [#HIVE-200]"
-          git commit --allow-empty -m "doc(api): update endpoint documentation [#HIVE-099]"
+          git commit --allow-empty -m "docs(api): update endpoint documentation [#HIVE-099]"
           git commit --allow-empty -m "feat(inv): add bulk import from CSV [#HIVE-089] [skip ci]"
+          git commit --allow-empty -m "fix(inv): fix reservation calculation error [#HIVE-090]"
+          git commit --allow-empty -m "perf(inv): optimise stock query for large warehouses [#HIVE-091]"
           git commit --allow-empty \
             -m "feat(qc): add quality control metrics dashboard [#HIVE-150]" \
             -m "Introduces a new real-time dashboard for QC operators. Includes trend charts, SPC limits, and defect categorisation. The body of this commit should not appear in the changelog — only the subject line is used."
@@ -127,6 +129,7 @@ jobs:
           # scopes are grouped with their label
           assert_contains "shop — Shopfloor"  "shop scope present"  "missing 'shop — Shopfloor'"
           assert_contains "api — API"         "api scope present"   "missing 'api — API'"
+          assert_contains "erp — ERP"         "erp scope present"   "missing 'erp — ERP'"
 
           # breaking change section
           assert_contains "Breaking Changes"                "breaking changes section present" "missing '⚠ Breaking Changes'"
@@ -138,6 +141,26 @@ jobs:
 
           # tracker URL is rendered as a link
           assert_contains "stemys.atlassian.net/browse/HIVE-063" "tracker link present" "missing tracker URL"
+
+          # scopes follow SCOPE_REGISTRY priority order
+          shop_line=$(echo "$CHANGELOG_DIFF" | grep -n "### shop" | head -1 | cut -d: -f1)
+          api_line=$(echo "$CHANGELOG_DIFF" | grep -n "### api" | head -1 | cut -d: -f1)
+          erp_line=$(echo "$CHANGELOG_DIFF" | grep -n "### erp" | head -1 | cut -d: -f1)
+          if [ "$shop_line" -lt "$api_line" ] && [ "$api_line" -lt "$erp_line" ]; then
+            ok "scopes are in SCOPE_REGISTRY order (shop < api < erp)"
+          else
+            fail "scopes are not in expected SCOPE_REGISTRY order"
+          fi
+
+          # type sections within the inv scope follow COMMIT_TYPES order
+          inv_feat=$(echo "$CHANGELOG_DIFF" | grep -n "#### Features" | head -1 | cut -d: -f1)
+          inv_fix=$(echo "$CHANGELOG_DIFF" | grep -n "#### Bugfixes" | head -1 | cut -d: -f1)
+          inv_perf=$(echo "$CHANGELOG_DIFF" | grep -n "#### Performance Improvements" | head -1 | cut -d: -f1)
+          if [ "$inv_feat" -lt "$inv_fix" ] && [ "$inv_fix" -lt "$inv_perf" ]; then
+            ok "type sections are in COMMIT_TYPES order (Features < Bugfixes < Performance)"
+          else
+            fail "type sections are not in expected order"
+          fi
 
           # no-scope commit goes to General
           assert_contains "### General"                 "General section present"   "missing '### General' section"
