@@ -111,7 +111,7 @@ jobs:
           fail() { echo "FAIL: $1"; exit 1; }
           ok()   { echo "OK  : $1"; }
           assert_contains() {
-            if echo "$CHANGELOG_DIFF" | grep -q "$1"; then
+            if echo "$CHANGELOG_DIFF" | grep -qF "$1"; then
               ok "$2"
             else
               fail "$3"
