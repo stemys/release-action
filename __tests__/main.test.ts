@@ -2,20 +2,32 @@ import {
   afterEach,
   beforeEach,
   describe,
-  it,
   expect,
+  it,
   jest
 } from '@jest/globals'
 
 const core = await import('../__fixtures__/core.js')
 
-const mockResolveVersions = jest.fn()
-const mockGenerateDiff = jest.fn()
-const mockConfigureGit = jest.fn()
-const mockPrependChangelog = jest.fn()
-const mockCommitChangelog = jest.fn()
-const mockCreateTag = jest.fn()
-const mockCreateRelease = jest.fn()
+const mockResolveVersions =
+  jest.fn<() => Promise<{ previousTag: string | null; newTag: string }>>()
+const mockGenerateDiff =
+  jest.fn<
+    (
+      version: string,
+      date: string,
+      previousTag: string | null,
+      trackerUrl: string
+    ) => Promise<string>
+  >()
+const mockConfigureGit = jest.fn<() => Promise<void>>()
+const mockPrependChangelog =
+  jest.fn<(filePath: string, diff: string) => Promise<void>>()
+const mockCommitChangelog =
+  jest.fn<(filePath: string, tagName: string) => Promise<void>>()
+const mockCreateTag = jest.fn<(tagName: string) => Promise<void>>()
+const mockCreateRelease =
+  jest.fn<(token: string, tagName: string, body: string) => Promise<string>>()
 
 jest.unstable_mockModule('@actions/core', () => core)
 jest.unstable_mockModule('../src/version.js', () => ({
@@ -36,22 +48,25 @@ jest.unstable_mockModule('../src/github-release.js', () => ({
 
 const { run } = await import('../src/main.js')
 
-const DIFF = '## [v1.0.1] (2026-06-03)\n\n### Features\n\n- something new\n'
+const DIFF =
+  '## [1.0.1] — 2026-06-03\n\n### shop — Shopfloor\n\n#### Features\n\n- something new\n'
 
 function setupInputs({
   scope = 'patch',
   stage = 'stable',
   dryRun = false
-} = {}) {
+} = {}): void {
   core.getInput.mockImplementation((name) => {
     return (
-      {
-        release_scope: scope,
-        release_stage: stage,
-        'tag-prefix': '',
-        'changelog-file': 'CHANGELOG.md',
-        'github-token': 'gh-token'
-      }[name] ?? ''
+      (
+        {
+          release_scope: scope,
+          release_stage: stage,
+          'tag-prefix': '',
+          'changelog-file': 'CHANGELOG.md',
+          'github-token': 'gh-token'
+        } as Record<string, string>
+      )[name as string] ?? ''
     )
   })
   core.getBooleanInput.mockReturnValue(dryRun)
@@ -69,7 +84,9 @@ describe('run', () => {
     )
   })
 
-  afterEach(() => jest.resetAllMocks())
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
 
   it('sets previous-version, new-version, and changelog-diff outputs', async () => {
     setupInputs()
@@ -124,8 +141,9 @@ describe('run', () => {
   })
 
   it('strips tag-prefix from the version passed to generateDiff', async () => {
+    setupInputs()
     core.getInput.mockImplementation(
-      (name) =>
+      (name: string) =>
         ({
           release_scope: 'patch',
           release_stage: 'stable',

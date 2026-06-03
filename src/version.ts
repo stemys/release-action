@@ -1,11 +1,20 @@
 import { getExecOutput } from '@actions/exec'
 import semver from 'semver'
 
-function stripPrefix(tag, prefix) {
+interface VersionResult {
+  previousTag: string | null
+  newTag: string
+}
+
+function stripPrefix(tag: string, prefix: string): string {
   return tag.startsWith(prefix) ? tag.slice(prefix.length) : tag
 }
 
-export async function resolveVersions(tagPrefix, scope, stage) {
+export async function resolveVersions(
+  tagPrefix: string,
+  scope: string,
+  stage: string
+): Promise<VersionResult> {
   const { stdout } = await getExecOutput(
     'git',
     ['tag', '--list', `${tagPrefix}*`],
@@ -30,9 +39,18 @@ export async function resolveVersions(tagPrefix, scope, stage) {
   )
   const stableVersion =
     stableTags.length > 0 ? stripPrefix(stableTags[0], tagPrefix) : '0.0.0'
-  const nextStableVersion = semver.inc(stableVersion, scope)
+  const nextStableVersion = semver.inc(
+    stableVersion,
+    scope as semver.ReleaseType
+  )
 
-  let newVersion
+  if (!nextStableVersion) {
+    throw new Error(
+      `Failed to compute next version from "${stableVersion}" with scope "${scope}"`
+    )
+  }
+
+  let newVersion: string
   if (stage === 'stable') {
     newVersion = nextStableVersion
   } else {
@@ -46,7 +64,9 @@ export async function resolveVersions(tagPrefix, scope, stage) {
 
     if (latestMatchingPre) {
       const preV = stripPrefix(latestMatchingPre, tagPrefix)
-      newVersion = semver.inc(preV, 'prerelease', stage)
+      newVersion =
+        semver.inc(preV, 'prerelease', stage) ??
+        `${nextStableVersion}-${stage}.0`
     } else {
       newVersion = `${nextStableVersion}-${stage}.0`
     }

@@ -1,6 +1,10 @@
-import { getOctokit, context } from '@actions/github'
+import { context, getOctokit } from '@actions/github'
 
-export async function createRelease(token, tagName, body) {
+export async function createRelease(
+  token: string,
+  tagName: string,
+  body: string
+): Promise<string> {
   const octokit = getOctokit(token)
   const { owner, repo } = context.repo
 

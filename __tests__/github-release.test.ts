@@ -1,7 +1,18 @@
-import { afterEach, describe, it, expect, jest } from '@jest/globals'
+import { afterEach, describe, expect, it, jest } from '@jest/globals'
 
-const mockCreateRelease = jest.fn()
-const mockGetOctokit = jest.fn(() => ({
+interface CreateReleaseParams {
+  owner: string
+  repo: string
+  tag_name: string
+  name: string
+  body: string
+}
+
+const mockCreateRelease =
+  jest.fn<
+    (params: CreateReleaseParams) => Promise<{ data: { html_url: string } }>
+  >()
+const mockGetOctokit = jest.fn((_token: string) => ({
   rest: { repos: { createRelease: mockCreateRelease } }
 }))
 
@@ -13,7 +24,9 @@ jest.unstable_mockModule('@actions/github', () => ({
 const { createRelease } = await import('../src/github-release.js')
 
 describe('createRelease', () => {
-  afterEach(() => jest.resetAllMocks())
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
 
   it('calls the GitHub Releases API with the correct parameters', async () => {
     mockCreateRelease.mockResolvedValue({

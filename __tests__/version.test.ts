@@ -1,6 +1,9 @@
-import { afterEach, describe, it, expect, jest } from '@jest/globals'
+import { afterEach, describe, expect, it, jest } from '@jest/globals'
 
-const mockGetExecOutput = jest.fn()
+const mockGetExecOutput =
+  jest.fn<
+    (cmd: string, args: string[], opts?: object) => Promise<{ stdout: string }>
+  >()
 
 jest.unstable_mockModule('@actions/exec', () => ({
   getExecOutput: mockGetExecOutput
@@ -9,7 +12,9 @@ jest.unstable_mockModule('@actions/exec', () => ({
 const { resolveVersions } = await import('../src/version.js')
 
 describe('resolveVersions', () => {
-  afterEach(() => jest.resetAllMocks())
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
 
   it('starts from 0.0.0 when no tags exist', async () => {
     mockGetExecOutput.mockResolvedValue({ stdout: '' })

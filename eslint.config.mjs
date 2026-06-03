@@ -1,8 +1,8 @@
-// See: https://eslint.org/docs/latest/use/configure/configuration-files
-
 import { fixupPluginRules } from '@eslint/compat'
 import { FlatCompat } from '@eslint/eslintrc'
 import js from '@eslint/js'
+import typescriptPlugin from '@typescript-eslint/eslint-plugin'
+import typescriptParser from '@typescript-eslint/parser'
 import _import from 'eslint-plugin-import'
 import jest from 'eslint-plugin-jest'
 import prettier from 'eslint-plugin-prettier'
@@ -56,6 +56,22 @@ export default [
       'no-shadow': 'off',
       'no-unused-vars': 'off',
       'prettier/prettier': 'error'
+    }
+  },
+  {
+    files: ['**/*.ts'],
+    languageOptions: {
+      parser: typescriptParser
+    },
+    plugins: {
+      '@typescript-eslint': typescriptPlugin
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' }
+      ],
+      '@typescript-eslint/no-explicit-any': 'warn'
     }
   }
 ]

@@ -1,18 +1,18 @@
 import * as core from '@actions/core'
-import { resolveVersions } from './version.js'
 import { generateDiff } from './changelog.js'
 import {
   configureGit,
-  prependChangelog,
   commitChangelog,
-  createTag
+  createTag,
+  prependChangelog
 } from './git.js'
 import { createRelease } from './github-release.js'
+import { resolveVersions } from './version.js'
 
 const VALID_SCOPES = ['major', 'minor', 'patch']
 const VALID_STAGES = ['alpha', 'beta', 'rc', 'stable']
 
-export async function run() {
+export async function run(): Promise<void> {
   try {
     const scope = core.getInput('release_scope', { required: true })
     const stage = core.getInput('release_stage') || 'stable'
@@ -68,6 +68,6 @@ export async function run() {
     const releaseUrl = await createRelease(token, newTag, diff)
     core.info(`GitHub Release created: ${releaseUrl}`)
   } catch (error) {
-    core.setFailed(error.message)
+    core.setFailed((error as Error).message)
   }
 }

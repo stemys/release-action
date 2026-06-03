@@ -14,12 +14,12 @@ const COMMIT_TYPES = [
   { type: 'build', title: 'Build System', hidden: true },
   { type: 'ci', title: 'CI/CD', hidden: true },
   { type: 'chore', title: 'Chores', hidden: true }
-]
+] as const
 
 // Scopes in business priority order.
 // Unknown scopes sort alphabetically after known ones.
 // Commits with no scope are grouped under "General" at the end.
-const SCOPE_REGISTRY = [
+const SCOPE_REGISTRY: [string, string][] = [
   ['admin', 'Hive Admin'],
   ['erp', 'ERP'],
   ['inv', 'Inventory'],
@@ -33,9 +33,11 @@ const SCOPE_REGISTRY = [
   ['core', 'Core']
 ]
 
-const SCOPE_LABEL = new Map(SCOPE_REGISTRY)
-const SCOPE_PRIORITY = new Map(SCOPE_REGISTRY.map(([k], i) => [k, i]))
-const VISIBLE_TYPES = new Map(
+const SCOPE_LABEL = new Map<string, string>(SCOPE_REGISTRY)
+const SCOPE_PRIORITY = new Map<string, number>(
+  SCOPE_REGISTRY.map(([k], i) => [k, i])
+)
+const VISIBLE_TYPES = new Map<string, string>(
   COMMIT_TYPES.filter((t) => !t.hidden).map((t) => [t.type, t.title])
 )
 const NO_SCOPE_KEY = '__none__'
@@ -44,15 +46,21 @@ const NO_SCOPE_KEY = '__none__'
 const TICKET_RE =
   /\[(#[A-Z]+-\d+(?:,\s*#[A-Z]+-\d+)*)\](?:\s*\[skip\s+ci\])?\s*$/
 
-function extractTickets(subject) {
-  const match = (subject ?? '').match(TICKET_RE)
-  if (!match) return { cleanSubject: (subject ?? '').trim(), tickets: [] }
-  const cleanSubject = subject.slice(0, match.index).trim()
+interface TicketExtraction {
+  cleanSubject: string
+  tickets: string[]
+}
+
+function extractTickets(subject: string | null | undefined): TicketExtraction {
+  const raw = subject ?? ''
+  const match = raw.match(TICKET_RE)
+  if (!match) return { cleanSubject: raw.trim(), tickets: [] }
+  const cleanSubject = raw.slice(0, match.index).trim()
   const tickets = match[1].split(',').map((t) => t.trim().replace(/^#/, ''))
   return { cleanSubject, tickets }
 }
 
-function renderTickets(tickets, trackerUrl) {
+function renderTickets(tickets: string[], trackerUrl: string): string {
   if (!tickets.length) return ''
   const links = tickets.map((t) =>
     trackerUrl ? `[${t}](${trackerUrl}/${t})` : t
@@ -60,11 +68,24 @@ function renderTickets(tickets, trackerUrl) {
   return ` (${links.join(', ')})`
 }
 
-function formatLine(commit, trackerUrl) {
+interface CommitNote {
+  title: string
+  text: string
+}
+
+interface ParsedCommit {
+  type?: string | null
+  scope?: string | null
+  subject?: string | null
+  notes: CommitNote[]
+  hash: string
+}
+
+function formatLine(commit: ParsedCommit, trackerUrl: string): string {
   // Breaking commits flagged with ! have subject=null; the text is in notes[0].
   const rawSubject =
     commit.subject ??
-    commit.notes?.find((n) => n.title === 'BREAKING CHANGE')?.text ??
+    commit.notes.find((n) => n.title === 'BREAKING CHANGE')?.text ??
     ''
   const { cleanSubject, tickets } = extractTickets(rawSubject)
   const ticketStr = renderTickets(tickets, trackerUrl)
@@ -84,14 +105,12 @@ const parser = new CommitParser({
   breakingHeaderPattern: /^(\w*)(?:\(([\w$@.\-*/ ]*)\))?!: (.*)$/
 })
 
-// Your convention places ! after the type: feat!(scope): message
-// The parser expects the standard placement: feat(scope)!: message
-// This normalizer converts one to the other before parsing.
-function normalizeMessage(message) {
-  return message.replace(/^(\w+)!\(([^)]+)\):/, '$1($2)!:')
+interface RawCommit {
+  hash: string
+  message: string
 }
 
-async function getRawCommits(ref) {
+async function getRawCommits(ref: string | null): Promise<RawCommit[]> {
   const range = ref ? `${ref}..HEAD` : 'HEAD'
   const { stdout } = await getExecOutput(
     'git',
@@ -112,39 +131,45 @@ async function getRawCommits(ref) {
     .filter((c) => c.hash)
 }
 
+interface ScopeBucket {
+  breaking: ParsedCommit[]
+  byType: Map<string, ParsedCommit[]>
+}
+
 export async function generateDiff(
-  version,
-  date,
-  previousTag,
+  version: string,
+  date: string,
+  previousTag: string | null,
   trackerUrl = ''
-) {
+): Promise<string> {
   const rawCommits = await getRawCommits(previousTag)
 
-  const parsed = rawCommits.map(({ hash, message }) => ({
-    ...parser.parse(normalizeMessage(message)),
+  const parsed: ParsedCommit[] = rawCommits.map(({ hash, message }) => ({
+    ...(parser.parse(message) as ParsedCommit),
     hash
   }))
 
   // Group commits into: scope -> { breaking: [], byType: Map<type, commit[]> }
   // Breaking change commits appear only in ⚠ Breaking Changes, not their type section.
-  const scopeMap = new Map()
+  const scopeMap = new Map<string, ScopeBucket>()
 
   for (const commit of parsed) {
-    const isBreaking = commit.notes?.some((n) => n.title === 'BREAKING CHANGE')
-    const isVisible = VISIBLE_TYPES.has(commit.type)
+    const isBreaking = commit.notes.some((n) => n.title === 'BREAKING CHANGE')
+    const isVisible = VISIBLE_TYPES.has(commit.type ?? '')
     if (!isBreaking && !isVisible) continue
 
     const scopeKey = commit.scope ?? NO_SCOPE_KEY
     if (!scopeMap.has(scopeKey)) {
       scopeMap.set(scopeKey, { breaking: [], byType: new Map() })
     }
-    const bucket = scopeMap.get(scopeKey)
+    const bucket = scopeMap.get(scopeKey)!
 
     if (isBreaking) {
       bucket.breaking.push(commit)
     } else {
-      if (!bucket.byType.has(commit.type)) bucket.byType.set(commit.type, [])
-      bucket.byType.get(commit.type).push(commit)
+      const type = commit.type ?? ''
+      if (!bucket.byType.has(type)) bucket.byType.set(type, [])
+      bucket.byType.get(type)!.push(commit)
     }
   }
 
@@ -163,7 +188,7 @@ export async function generateDiff(
   })
 
   for (const scopeKey of sortedScopes) {
-    const { breaking, byType } = scopeMap.get(scopeKey)
+    const { breaking, byType } = scopeMap.get(scopeKey)!
     const label = SCOPE_LABEL.get(scopeKey)
 
     if (scopeKey === NO_SCOPE_KEY) {

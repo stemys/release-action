@@ -58,13 +58,16 @@ Set `dry-run: true` to preview all outputs without touching git or GitHub.
 The version base is always the latest **stable** tag (no pre-release suffix).
 Pre-release series are tracked separately:
 
-| Latest stable | Scope   | Stage    | Result        |
-| ------------- | ------- | -------- | ------------- |
-| `v1.2.3`      | `patch` | `stable` | `v1.2.4`      |
-| `v1.2.3`      | `minor` | `stable` | `v1.3.0`      |
-| `v1.2.3`      | `patch` | `rc`     | `v1.2.4-rc.0` |
-| `v1.2.4-rc.0` | `patch` | `rc`     | `v1.2.4-rc.1` |
-| `v1.2.4-rc.1` | `patch` | `stable` | `v1.2.4`      |
+| Latest stable | Scope   | Stage    | Result       |
+| ------------- | ------- | -------- | ------------ |
+| `1.2.3`       | `patch` | `stable` | `1.2.4`      |
+| `1.2.3`       | `minor` | `stable` | `1.3.0`      |
+| `1.2.3`       | `major` | `stable` | `2.0.0`      |
+| `1.2.3`       | `patch` | `rc`     | `1.2.4-rc.0` |
+| `1.2.4-rc.0`  | `patch` | `rc`     | `1.2.4-rc.1` |
+| `1.2.4-rc.1`  | `patch` | `stable` | `1.2.4`      |
+
+Add `tag-prefix: v` to produce `v1.2.4` style tags.
 
 ## Conventional Commits
 

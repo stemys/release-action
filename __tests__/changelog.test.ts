@@ -1,6 +1,9 @@
-import { afterEach, describe, it, expect, jest } from '@jest/globals'
+import { afterEach, describe, expect, it, jest } from '@jest/globals'
 
-const mockGetExecOutput = jest.fn()
+const mockGetExecOutput =
+  jest.fn<
+    (cmd: string, args: string[], opts?: object) => Promise<{ stdout: string }>
+  >()
 
 jest.unstable_mockModule('@actions/exec', () => ({
   getExecOutput: mockGetExecOutput
@@ -12,14 +15,16 @@ const VERSION = '1.0.0'
 const DATE = '2026-06-03'
 const TRACKER = 'https://stemys.atlassian.net/browse'
 
-function gitLog(...messages) {
+function gitLog(...messages: string[]): string {
   return messages
     .map((m, i) => `\x00hash${String(i).padStart(12, '0')}\n${m}`)
     .join('')
 }
 
 describe('generateDiff', () => {
-  afterEach(() => jest.resetAllMocks())
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
 
   describe('header', () => {
     it('uses an em dash and no tag prefix in the version heading', async () => {
@@ -122,7 +127,7 @@ describe('generateDiff', () => {
     it('renders breaking change commits under ⚠ Breaking Changes', async () => {
       mockGetExecOutput.mockResolvedValue({
         stdout: gitLog(
-          'feat!(core): remove deprecated v1 endpoints [#HIVE-200]'
+          'feat(core)!: remove deprecated v1 endpoints [#HIVE-200]'
         )
       })
       const diff = await generateDiff(VERSION, DATE, null)
@@ -134,7 +139,7 @@ describe('generateDiff', () => {
       mockGetExecOutput.mockResolvedValue({
         stdout: gitLog(
           'feat(shop): regular feature [#HIVE-1]',
-          'feat!(shop): breaking feature [#HIVE-2]'
+          'feat(shop)!: breaking feature [#HIVE-2]'
         )
       })
       const diff = await generateDiff(VERSION, DATE, null)
@@ -145,7 +150,7 @@ describe('generateDiff', () => {
 
     it('does not duplicate breaking change commits in their type section', async () => {
       mockGetExecOutput.mockResolvedValue({
-        stdout: gitLog('feat!(shop): breaking feature [#HIVE-2]')
+        stdout: gitLog('feat(shop)!: breaking feature [#HIVE-2]')
       })
       const diff = await generateDiff(VERSION, DATE, null)
       expect(diff).toContain('#### ⚠ Breaking Changes')

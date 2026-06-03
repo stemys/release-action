@@ -1,8 +1,12 @@
-import { afterEach, describe, it, expect, jest } from '@jest/globals'
+import { afterEach, describe, expect, it, jest } from '@jest/globals'
 
-const mockExec = jest.fn().mockResolvedValue(0)
-const mockReadFile = jest.fn()
-const mockWriteFile = jest.fn()
+const mockExec = jest
+  .fn<(cmd: string, args?: string[]) => Promise<number>>()
+  .mockResolvedValue(0)
+const mockReadFile =
+  jest.fn<(path: string, encoding: string) => Promise<string>>()
+const mockWriteFile =
+  jest.fn<(path: string, data: string, encoding: string) => Promise<void>>()
 
 jest.unstable_mockModule('@actions/exec', () => ({ exec: mockExec }))
 jest.unstable_mockModule('node:fs/promises', () => ({
@@ -14,7 +18,9 @@ const { configureGit, prependChangelog, commitChangelog, createTag } =
   await import('../src/git.js')
 
 describe('configureGit', () => {
-  afterEach(() => jest.resetAllMocks())
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
 
   it('sets git user.email to the github-actions bot address', async () => {
     await configureGit()
@@ -36,7 +42,9 @@ describe('configureGit', () => {
 })
 
 describe('prependChangelog', () => {
-  afterEach(() => jest.resetAllMocks())
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
 
   it('prepends the diff to existing file content', async () => {
     mockReadFile.mockResolvedValue('# existing\n')
@@ -62,7 +70,9 @@ describe('prependChangelog', () => {
 })
 
 describe('commitChangelog', () => {
-  afterEach(() => jest.resetAllMocks())
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
 
   it('stages and commits the changelog file', async () => {
     await commitChangelog('CHANGELOG.md', 'v1.0.0')
@@ -76,7 +86,9 @@ describe('commitChangelog', () => {
 })
 
 describe('createTag', () => {
-  afterEach(() => jest.resetAllMocks())
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
 
   it('creates a lightweight tag', async () => {
     await createTag('v1.0.0')

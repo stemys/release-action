@@ -37,7 +37,8 @@
     "package": "npx rimraf ./dist && npx rollup --config rollup.config.js",
     "package:watch": "npm run package -- --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest",
-    "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package"
+    "typecheck": "tsc --noEmit",
+    "all": "npm run format:write && npm run lint && npm run typecheck && npm run test && npm run coverage && npm run package"
   },
   "license": "MIT",
   "dependencies": {
@@ -52,6 +53,12 @@
     "@jest/globals": "^30.2.0",
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "@types/conventional-commits-parser": "^5.0.2",
+    "@types/node": "^25.9.1",
+    "@types/semver": "^7.7.1",
+    "@typescript-eslint/eslint-plugin": "^8.60.1",
+    "@typescript-eslint/parser": "^8.60.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
@@ -61,7 +68,9 @@
     "make-coverage-badge": "^1.2.0",
     "prettier": "^3.8.1",
     "prettier-eslint": "^16.4.2",
-    "rollup": "^4.57.1"
+    "rollup": "^4.57.1",
+    "ts-jest": "^29.4.11",
+    "typescript": "^6.0.3"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "*"
