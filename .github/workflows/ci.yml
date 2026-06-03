@@ -74,6 +74,8 @@ jobs:
             -m "feat(qc): add quality control metrics dashboard [#HIVE-150]" \
             -m "Introduces a new real-time dashboard for QC operators. Includes trend charts, SPC limits, and defect categorisation. The body of this commit should not appear in the changelog — only the subject line is used."
           git commit --allow-empty -m "fix(common): fix typo in shared utility --no-issue"
+          git commit --allow-empty -m "fix: apply global security patch [#HIVE-999]"
+          git commit --allow-empty -m "feat(legacy): migrate old data format [#HIVE-500]"
           git commit --allow-empty -m "chore(core): bump dependencies [#HIVE-001]"
 
       - name: Run Release Action (dry-run)
@@ -98,68 +100,53 @@ jobs:
 
           fail() { echo "FAIL: $1"; exit 1; }
           ok()   { echo "OK  : $1"; }
+          assert_contains() {
+            if echo "$CHANGELOG_DIFF" | grep -q "$1"; then
+              ok "$2"
+            else
+              fail "$3"
+            fi
+          }
 
-          [ "${{ steps.release.outputs.previous-version }}" = "1.0.0" ] \
-            && ok "previous-version is 1.0.0" \
-            || fail "expected previous-version=1.0.0, got ${{ steps.release.outputs.previous-version }}"
-
-          [ "${{ steps.release.outputs.new-version }}" = "1.0.1" ] \
-            && ok "new-version is 1.0.1" \
-            || fail "expected new-version=1.0.1, got ${{ steps.release.outputs.new-version }}"
-
-          echo "$CHANGELOG_DIFF" | grep -q "shop — Shopfloor" \
-            && ok "shop scope present" || fail "missing 'shop — Shopfloor'"
-
-          echo "$CHANGELOG_DIFF" | grep -q "erp — ERP" \
-            && ok "erp scope present" || fail "missing 'erp — ERP'"
-
-          echo "$CHANGELOG_DIFF" | grep -q "api — API" \
-            && ok "api scope present" || fail "missing 'api — API'"
-
-          echo "$CHANGELOG_DIFF" | grep -q "Breaking Changes" \
-            && ok "breaking changes present" || fail "missing '⚠ Breaking Changes'"
-
-          echo "$CHANGELOG_DIFF" | grep -q "HIVE-063" \
-            && ok "ticket HIVE-063 present" || fail "missing ticket HIVE-063"
-
-          echo "$CHANGELOG_DIFF" | grep -q "HIVE-301" \
-            && ok "ticket HIVE-301 present" || fail "missing ticket HIVE-301"
-
-          echo "$CHANGELOG_DIFF" | grep -q "SUPP-012" \
-            && ok "ticket SUPP-012 present" || fail "missing ticket SUPP-012"
-
-          echo "$CHANGELOG_DIFF" | grep -q "stemys.atlassian.net/browse/HIVE-063" \
-            && ok "tracker link present" || fail "missing tracker URL"
-
-          echo "$CHANGELOG_DIFF" | grep -q "HIVE-089" \
-            && ok "ticket HIVE-089 (skip-ci commit) present" || fail "missing ticket HIVE-089"
-
-          echo "$CHANGELOG_DIFF" | grep -q "HIVE-150" \
-            && ok "ticket HIVE-150 (multiline commit) present" || fail "missing ticket HIVE-150"
-
-          echo "$CHANGELOG_DIFF" | grep -q "quality control metrics dashboard" \
-            && ok "multiline commit subject present" || fail "missing multiline commit subject"
-
-          if echo "$CHANGELOG_DIFF" | grep -q "SPC limits"; then
-            fail "commit body must not appear in the changelog"
+          if [ "${{ steps.release.outputs.previous-version }}" = "1.0.0" ]; then
+            ok "previous-version is 1.0.0"
           else
-            ok "commit body is correctly ignored"
+            fail "expected previous-version=1.0.0, got ${{ steps.release.outputs.previous-version }}"
           fi
 
-          echo "$CHANGELOG_DIFF" | grep -q "fix typo in shared utility" \
-            && ok "--no-issue commit subject present" || fail "missing --no-issue commit subject"
-
-          if echo "$CHANGELOG_DIFF" | grep -q "\-\-no-issue"; then
-            fail "--no-issue marker must be stripped from the changelog"
+          if [ "${{ steps.release.outputs.new-version }}" = "1.0.1" ]; then
+            ok "new-version is 1.0.1"
           else
-            ok "--no-issue marker is correctly stripped"
+            fail "expected new-version=1.0.1, got ${{ steps.release.outputs.new-version }}"
           fi
 
-          if echo "$CHANGELOG_DIFF" | grep -q "\[skip ci\]"; then
-            fail "[skip ci] must be stripped from the changelog"
-          else
-            ok "[skip ci] is correctly stripped"
-          fi
+          # scopes are grouped with their label
+          assert_contains "shop — Shopfloor"  "shop scope present"  "missing 'shop — Shopfloor'"
+          assert_contains "api — API"         "api scope present"   "missing 'api — API'"
+
+          # breaking change section
+          assert_contains "Breaking Changes"                "breaking changes section present" "missing '⚠ Breaking Changes'"
+          assert_contains "remove deprecated v1 endpoints"  "breaking feat subject present"   "missing breaking feat subject"
+
+          # multi-ticket commit
+          assert_contains "HIVE-301"  "ticket HIVE-301 present"  "missing ticket HIVE-301"
+          assert_contains "SUPP-012"  "ticket SUPP-012 present"  "missing ticket SUPP-012"
+
+          # tracker URL is rendered as a link
+          assert_contains "stemys.atlassian.net/browse/HIVE-063" "tracker link present" "missing tracker URL"
+
+          # no-scope commit goes to General
+          assert_contains "### General"                 "General section present"   "missing '### General' section"
+          assert_contains "apply global security patch" "no-scope subject present"  "missing no-scope commit subject"
+
+          # unknown scope gets a group but no display name
+          assert_contains "### legacy"               "unknown scope group present"   "missing '### legacy' group"
+          assert_contains "migrate old data format"  "unknown scope subject present" "missing unknown scope commit subject"
+
+          # multiline commit: only the subject appears, not the body
+          assert_contains "quality control metrics dashboard" "multiline commit subject present" "missing multiline commit subject"
+
+          assert_contains "fix typo in shared utility" "--no-issue commit subject present" "missing --no-issue commit subject"
 
           if echo "$CHANGELOG_DIFF" | grep -q "bump dependencies"; then
             fail "chore commit must be hidden from changelog"

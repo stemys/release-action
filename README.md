@@ -9,15 +9,15 @@ Releases — all in one step.
 ## What it does
 
 1. Resolves the latest SemVer tag in your repository
-2. Calculates the next version based on `release_scope` and `release_stage`
-3. Generates a CHANGELOG diff from commits since the last tag (Conventional
+1. Calculates the next version based on `release_scope` and `release_stage`
+1. Generates a CHANGELOG diff from commits since the last tag (Conventional
    Commits aware)
-4. Prepends the diff to your `CHANGELOG.md`
-5. Commits the updated `CHANGELOG.md` to the current branch
-6. Creates a lightweight git tag on that commit
-7. Creates a GitHub Release with the new tag as title and the diff as body
+1. Prepends the diff to your `CHANGELOG.md`
+1. Commits the updated `CHANGELOG.md` to the current branch
+1. Creates a lightweight Git tag on that commit
+1. Creates a GitHub Release with the new tag as title and the diff as body
 
-Set `dry-run: true` to preview all outputs without touching git or GitHub.
+Set `dry-run: true` to preview all outputs without touching Git or GitHub.
 
 ## Usage
 
@@ -36,27 +36,27 @@ Set `dry-run: true` to preview all outputs without touching git or GitHub.
 
 ## Inputs
 
-| Input            | Required | Default        | Description                                         |
-| ---------------- | -------- | -------------- | --------------------------------------------------- |
-| `release_scope`  | Yes      | —              | SemVer component to bump: `major`, `minor`, `patch` |
-| `release_stage`  | Yes      | `stable`       | Pre-release stage: `stable`, `rc`, `beta`, `alpha`  |
-| `tag-prefix`     | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)   |
-| `changelog-file` | No       | `CHANGELOG.md` | Path to the changelog file                          |
-| `github-token`   | Yes      | —              | Token used to create the GitHub Release             |
-| `dry-run`        | No       | `false`        | Preview outputs without any git or GitHub writes    |
+| Input            | Required | Default        | Description                                          |
+| ---------------- | -------- | -------------- | ---------------------------------------------------- |
+| `release_scope`  | Yes      | —              | SemVer component to bump: `major`, `minor`, `patch`  |
+| `release_stage`  | Yes      | `stable`       | Prerelease stage: `stable`, `rc`, `beta`, `alpha`    |
+| `tag-prefix`     | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)    |
+| `changelog-file` | No       | `CHANGELOG.md` | Path to the changelog file                           |
+| `github-token`   | Yes      | —              | Token used to create the GitHub Release              |
+| `dry-run`        | No       | `false`        | Preview outputs without any Git or GitHub writes     |
 
 ## Outputs
 
-| Output             | Description                                      |
-| ------------------ | ------------------------------------------------ |
-| `previous-version` | The latest tag found before this run             |
-| `new-version`      | The new tag created by this run                  |
-| `changelog-diff`   | The markdown changelog fragment for this release |
+| Output             | Description                                       |
+| ------------------ | ------------------------------------------------- |
+| `previous-version` | The latest tag found before this run              |
+| `new-version`      | The new tag created by this run                   |
+| `changelog-diff`   | The Markdown changelog fragment for this release  |
 
 ## Versioning behaviour
 
-The version base is always the latest **stable** tag (no pre-release suffix).
-Pre-release series are tracked separately:
+The version base is always the latest **stable** tag (no prerelease suffix).
+Prerelease series are tracked separately:
 
 | Latest stable | Scope   | Stage    | Result       |
 | ------------- | ------- | -------- | ------------ |
@@ -74,16 +74,16 @@ Add `tag-prefix: v` to produce `v1.2.4` style tags.
 The following commit types appear in the changelog:
 
 | Type       | Section                  | Hidden |
-| ---------- | ------------------------ | ------ |
+|------------| ------------------------ | ------ |
 | `feat`     | Features                 | no     |
-| `fix`      | Bug Fixes                | no     |
+| `fix`      | Bugfixes                 | no     |
 | `perf`     | Performance Improvements | no     |
 | `revert`   | Reverts                  | no     |
 | `docs`     | Documentation            | no     |
 | `refactor` | Code Refactoring         | yes    |
 | `style`    | Styles                   | yes    |
 | `test`     | Tests                    | yes    |
-| `build`    | Build System             | yes    |
+| `build`    | Build tool               | yes    |
 | `ci`       | CI/CD                    | yes    |
 | `chore`    | Chores                   | yes    |
 
@@ -91,7 +91,7 @@ Commits with a `BREAKING CHANGE` footer always produce a **BREAKING CHANGES**
 section regardless of type.
 
 To change which types appear, flip `hidden` in the `COMMIT_TYPES` array in
-[`src/changelog.js`](./src/changelog.js).
+[`src/changelog.ts`](./src/changelog.ts).
 
 ## Dependency License Management
 
