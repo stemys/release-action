@@ -38,3 +38,8 @@ export async function commitChangelog(
 export async function createTag(tagName: string): Promise<void> {
   await exec('git', ['tag', tagName]);
 }
+
+export async function pushChanges(tagName: string): Promise<void> {
+  await exec('git', ['push']);
+  await exec('git', ['push', 'origin', tagName]);
+}

@@ -5,7 +5,8 @@ import {
   commitChangelog,
   configureGit,
   createTag,
-  prependChangelog
+  prependChangelog,
+  pushChanges
 } from './git.js';
 import { createMergeBackPR, createRelease } from './github-release.js';
 import { resolveVersions } from './version.js';
@@ -84,6 +85,7 @@ export async function run(): Promise<void> {
     await prependChangelog(changelogFile, diff);
     await commitChangelog(changelogFile, newTag);
     await createTag(newTag);
+    await pushChanges(newTag);
 
     const releaseUrl = await createRelease(token, newTag, diff);
     core.info(`GitHub Release created: ${releaseUrl}`);

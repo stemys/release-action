@@ -14,8 +14,13 @@ jest.unstable_mockModule('node:fs/promises', () => ({
   writeFile: mockWriteFile
 }));
 
-const { configureGit, prependChangelog, commitChangelog, createTag } =
-  await import('../src/git.js');
+const {
+  configureGit,
+  prependChangelog,
+  commitChangelog,
+  createTag,
+  pushChanges
+} = await import('../src/git.js');
 
 describe('configureGit', () => {
   afterEach(() => {
@@ -93,5 +98,21 @@ describe('createTag', () => {
   it('creates a lightweight tag', async () => {
     await createTag('v1.0.0');
     expect(mockExec).toHaveBeenCalledWith('git', ['tag', 'v1.0.0']);
+  });
+});
+
+describe('pushChanges', () => {
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('pushes the current branch', async () => {
+    await pushChanges('v1.0.0');
+    expect(mockExec).toHaveBeenCalledWith('git', ['push']);
+  });
+
+  it('pushes the tag to origin', async () => {
+    await pushChanges('v1.0.0');
+    expect(mockExec).toHaveBeenCalledWith('git', ['push', 'origin', 'v1.0.0']);
   });
 });

@@ -29108,6 +29108,10 @@ async function commitChangelog(filePath, tagName) {
 async function createTag(tagName) {
     await exec('git', ['tag', tagName]);
 }
+async function pushChanges(tagName) {
+    await exec('git', ['push']);
+    await exec('git', ['push', 'origin', tagName]);
+}
 
 var github = {};
 
@@ -36873,6 +36877,7 @@ async function run() {
         await prependChangelog(changelogFile, diff);
         await commitChangelog(changelogFile, newTag);
         await createTag(newTag);
+        await pushChanges(newTag);
         const releaseUrl = await createRelease(token, newTag, diff);
         coreExports.info(`GitHub Release created: ${releaseUrl}`);
         if (mergeBackTo) {

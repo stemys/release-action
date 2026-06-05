@@ -31,6 +31,7 @@ const mockPrependChangelog =
 const mockCommitChangelog =
   jest.fn<(filePath: string, tagName: string) => Promise<void>>();
 const mockCreateTag = jest.fn<(tagName: string) => Promise<void>>();
+const mockPushChanges = jest.fn<(tagName: string) => Promise<void>>();
 const mockCreateRelease =
   jest.fn<(token: string, tagName: string, body: string) => Promise<string>>();
 const mockCreateMergeBackPR =
@@ -57,7 +58,8 @@ jest.unstable_mockModule('../src/git.js', () => ({
   configureGit: mockConfigureGit,
   prependChangelog: mockPrependChangelog,
   commitChangelog: mockCommitChangelog,
-  createTag: mockCreateTag
+  createTag: mockCreateTag,
+  pushChanges: mockPushChanges
 }));
 jest.unstable_mockModule('../src/github-release.js', () => ({
   createRelease: mockCreateRelease,
@@ -129,6 +131,7 @@ describe('run', () => {
     expect(mockPrependChangelog).toHaveBeenCalledWith('CHANGELOG.md', DIFF);
     expect(mockCommitChangelog).toHaveBeenCalledWith('CHANGELOG.md', '1.0.1');
     expect(mockCreateTag).toHaveBeenCalledWith('1.0.1');
+    expect(mockPushChanges).toHaveBeenCalledWith('1.0.1');
     expect(mockCreateRelease).toHaveBeenCalledWith('gh-token', '1.0.1', DIFF);
   });
 
@@ -136,6 +139,7 @@ describe('run', () => {
     setupInputs({ dryRun: true });
     await run();
     expect(mockConfigureGit).not.toHaveBeenCalled();
+    expect(mockPushChanges).not.toHaveBeenCalled();
     expect(mockCommitChangelog).not.toHaveBeenCalled();
     expect(mockCreateRelease).not.toHaveBeenCalled();
   });
