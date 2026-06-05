@@ -29112,6 +29112,39 @@ async function pushChanges(tagName) {
     await exec('git', ['push']);
     await exec('git', ['push', 'origin', tagName]);
 }
+async function tryRebaseBranch(targetBranch, onto) {
+    const tempBranch = '__release-sync__';
+    await exec('git', ['fetch', 'origin', targetBranch]);
+    await exec('git', ['checkout', '-b', tempBranch, `origin/${targetBranch}`]);
+    let success = false;
+    try {
+        const { exitCode } = await getExecOutput('git', ['rebase', onto], {
+            ignoreReturnCode: true
+        });
+        if (exitCode === 0) {
+            try {
+                await exec('git', [
+                    'push',
+                    'origin',
+                    `HEAD:refs/heads/${targetBranch}`,
+                    '--force-with-lease'
+                ]);
+                success = true;
+            }
+            catch {
+                // Push rejected (e.g. concurrent update on remote); caller falls back to PR.
+            }
+        }
+        else {
+            await exec('git', ['rebase', '--abort']);
+        }
+    }
+    finally {
+        await exec('git', ['checkout', '-']);
+        await exec('git', ['branch', '-D', tempBranch]);
+    }
+    return success;
+}
 
 var github = {};
 
@@ -36881,12 +36914,19 @@ async function run() {
         const releaseUrl = await createRelease(token, newTag, diff);
         coreExports.info(`GitHub Release created: ${releaseUrl}`);
         if (mergeBackTo) {
-            const prUrl = await createMergeBackPR(token, newTag, mergeBackTo, diff);
-            if (prUrl) {
-                coreExports.info(`Merge-back PR created: ${prUrl}`);
+            const rebased = await tryRebaseBranch(mergeBackTo, newTag);
+            if (rebased) {
+                coreExports.info(`${mergeBackTo} successfully rebased onto ${newTag}.`);
             }
             else {
-                coreExports.info(`Skipping merge-back PR: ${newTag} has no commits ahead of ${mergeBackTo}.`);
+                coreExports.info(`Rebase of ${mergeBackTo} onto ${newTag} has conflicts — opening a merge-back PR instead.`);
+                const prUrl = await createMergeBackPR(token, newTag, mergeBackTo, diff);
+                if (prUrl) {
+                    coreExports.info(`Merge-back PR created: ${prUrl}`);
+                }
+                else {
+                    coreExports.info(`Skipping merge-back PR: ${newTag} has no commits ahead of ${mergeBackTo}.`);
+                }
             }
         }
     }

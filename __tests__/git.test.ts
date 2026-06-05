@@ -3,12 +3,23 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 const mockExec = jest
   .fn<(cmd: string, args?: string[]) => Promise<number>>()
   .mockResolvedValue(0);
+const mockGetExecOutput =
+  jest.fn<
+    (
+      cmd: string,
+      args?: string[],
+      opts?: object
+    ) => Promise<{ exitCode: number; stdout: string; stderr: string }>
+  >();
 const mockReadFile =
   jest.fn<(path: string, encoding: string) => Promise<string>>();
 const mockWriteFile =
   jest.fn<(path: string, data: string, encoding: string) => Promise<void>>();
 
-jest.unstable_mockModule('@actions/exec', () => ({ exec: mockExec }));
+jest.unstable_mockModule('@actions/exec', () => ({
+  exec: mockExec,
+  getExecOutput: mockGetExecOutput
+}));
 jest.unstable_mockModule('node:fs/promises', () => ({
   readFile: mockReadFile,
   writeFile: mockWriteFile
@@ -19,7 +30,8 @@ const {
   prependChangelog,
   commitChangelog,
   createTag,
-  pushChanges
+  pushChanges,
+  tryRebaseBranch
 } = await import('../src/git.js');
 
 describe('configureGit', () => {
@@ -114,5 +126,85 @@ describe('pushChanges', () => {
   it('pushes the tag to origin', async () => {
     await pushChanges('v1.0.0');
     expect(mockExec).toHaveBeenCalledWith('git', ['push', 'origin', 'v1.0.0']);
+  });
+});
+
+describe('tryRebaseBranch', () => {
+  afterEach(() => {
+    jest.resetAllMocks();
+    mockExec.mockResolvedValue(0);
+  });
+
+  it('returns true and force-pushes when rebase exits cleanly', async () => {
+    mockGetExecOutput.mockResolvedValue({
+      exitCode: 0,
+      stdout: '',
+      stderr: ''
+    });
+
+    const result = await tryRebaseBranch('develop', 'v1.0.1');
+
+    expect(result).toBe(true);
+    expect(mockExec).toHaveBeenCalledWith('git', [
+      'push',
+      'origin',
+      'HEAD:refs/heads/develop',
+      '--force-with-lease'
+    ]);
+  });
+
+  it('returns false and aborts when rebase has conflicts', async () => {
+    mockGetExecOutput.mockResolvedValue({
+      exitCode: 1,
+      stdout: '',
+      stderr: 'CONFLICT (content): Merge conflict in src/foo.ts'
+    });
+
+    const result = await tryRebaseBranch('develop', 'v1.0.1');
+
+    expect(result).toBe(false);
+    expect(mockExec).toHaveBeenCalledWith('git', ['rebase', '--abort']);
+    expect(mockExec).not.toHaveBeenCalledWith(
+      'git',
+      expect.arrayContaining(['--force-with-lease'])
+    );
+  });
+
+  it('returns false when the push is rejected after a clean rebase', async () => {
+    mockGetExecOutput.mockResolvedValue({
+      exitCode: 0,
+      stdout: '',
+      stderr: ''
+    });
+    mockExec.mockImplementation(async (_cmd: string, args?: string[]) => {
+      if (args?.includes('--force-with-lease')) throw new Error('rejected');
+      return 0;
+    });
+
+    const result = await tryRebaseBranch('develop', 'v1.0.1');
+
+    expect(result).toBe(false);
+  });
+
+  it('fetches the target branch and creates a temp branch before rebasing', async () => {
+    mockGetExecOutput.mockResolvedValue({
+      exitCode: 0,
+      stdout: '',
+      stderr: ''
+    });
+
+    await tryRebaseBranch('develop', 'v1.0.1');
+
+    expect(mockExec).toHaveBeenCalledWith('git', [
+      'fetch',
+      'origin',
+      'develop'
+    ]);
+    expect(mockExec).toHaveBeenCalledWith('git', [
+      'checkout',
+      '-b',
+      '__release-sync__',
+      'origin/develop'
+    ]);
   });
 });

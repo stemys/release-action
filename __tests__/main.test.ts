@@ -32,6 +32,8 @@ const mockCommitChangelog =
   jest.fn<(filePath: string, tagName: string) => Promise<void>>();
 const mockCreateTag = jest.fn<(tagName: string) => Promise<void>>();
 const mockPushChanges = jest.fn<(tagName: string) => Promise<void>>();
+const mockTryRebaseBranch =
+  jest.fn<(targetBranch: string, onto: string) => Promise<boolean>>();
 const mockCreateRelease =
   jest.fn<(token: string, tagName: string, body: string) => Promise<string>>();
 const mockCreateMergeBackPR =
@@ -59,7 +61,8 @@ jest.unstable_mockModule('../src/git.js', () => ({
   prependChangelog: mockPrependChangelog,
   commitChangelog: mockCommitChangelog,
   createTag: mockCreateTag,
-  pushChanges: mockPushChanges
+  pushChanges: mockPushChanges,
+  tryRebaseBranch: mockTryRebaseBranch
 }));
 jest.unstable_mockModule('../src/github-release.js', () => ({
   createRelease: mockCreateRelease,
@@ -109,6 +112,7 @@ describe('run', () => {
     mockCreateMergeBackPR.mockResolvedValue(
       'https://github.com/owner/repo/pull/1'
     );
+    mockTryRebaseBranch.mockResolvedValue(true);
     mockReadFile.mockResolvedValue('');
   });
 
@@ -227,25 +231,36 @@ describe('run', () => {
     );
   });
 
-  it('does not create a merge-back PR when merge-back-to is empty', async () => {
+  it('skips merge-back entirely when merge-back-to is empty', async () => {
     setupInputs();
     await run();
+    expect(mockTryRebaseBranch).not.toHaveBeenCalled();
     expect(mockCreateMergeBackPR).not.toHaveBeenCalled();
   });
 
-  it('does not create a merge-back PR in dry-run mode', async () => {
+  it('skips merge-back in dry-run mode', async () => {
     setupInputs({ dryRun: true, mergeBackTo: 'main' });
     await run();
+    expect(mockTryRebaseBranch).not.toHaveBeenCalled();
     expect(mockCreateMergeBackPR).not.toHaveBeenCalled();
   });
 
-  it('creates a merge-back PR with the token, tag, target branch, and diff', async () => {
-    setupInputs({ mergeBackTo: 'main' });
+  it('rebases target branch onto the new tag when merge-back-to is set', async () => {
+    setupInputs({ mergeBackTo: 'develop' });
+    mockTryRebaseBranch.mockResolvedValue(true);
+    await run();
+    expect(mockTryRebaseBranch).toHaveBeenCalledWith('develop', '1.0.1');
+    expect(mockCreateMergeBackPR).not.toHaveBeenCalled();
+  });
+
+  it('opens a PR when the rebase has conflicts', async () => {
+    setupInputs({ mergeBackTo: 'develop' });
+    mockTryRebaseBranch.mockResolvedValue(false);
     await run();
     expect(mockCreateMergeBackPR).toHaveBeenCalledWith(
       'gh-token',
       '1.0.1',
-      'main',
+      'develop',
       DIFF
     );
   });

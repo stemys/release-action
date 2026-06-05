@@ -6,7 +6,8 @@ import {
   configureGit,
   createTag,
   prependChangelog,
-  pushChanges
+  pushChanges,
+  tryRebaseBranch
 } from './git.js';
 import { createMergeBackPR, createRelease } from './github-release.js';
 import { resolveVersions } from './version.js';
@@ -91,13 +92,21 @@ export async function run(): Promise<void> {
     core.info(`GitHub Release created: ${releaseUrl}`);
 
     if (mergeBackTo) {
-      const prUrl = await createMergeBackPR(token, newTag, mergeBackTo, diff);
-      if (prUrl) {
-        core.info(`Merge-back PR created: ${prUrl}`);
+      const rebased = await tryRebaseBranch(mergeBackTo, newTag);
+      if (rebased) {
+        core.info(`${mergeBackTo} successfully rebased onto ${newTag}.`);
       } else {
         core.info(
-          `Skipping merge-back PR: ${newTag} has no commits ahead of ${mergeBackTo}.`
+          `Rebase of ${mergeBackTo} onto ${newTag} has conflicts — opening a merge-back PR instead.`
         );
+        const prUrl = await createMergeBackPR(token, newTag, mergeBackTo, diff);
+        if (prUrl) {
+          core.info(`Merge-back PR created: ${prUrl}`);
+        } else {
+          core.info(
+            `Skipping merge-back PR: ${newTag} has no commits ahead of ${mergeBackTo}.`
+          );
+        }
       }
     }
   } catch (error) {
