@@ -60,20 +60,20 @@ jobs:
           git config user.email "ci@github.com"
           git config user.name "CI Test"
 
-          # v0.9.0 — older release, commits here must NOT appear in the changelog
-          git tag 0.9.0
+          # v10.9.0 — older release, commits here must NOT appear in the changelog
+          git tag 10.9.0
           git commit --allow-empty -m "feat(erp): add purchase order workflow [#HIVE-010]"
           git commit --allow-empty -m "fix(shop): fix display bug on mobile [#HIVE-011]"
           git commit --allow-empty -m "chore(core): upgrade node version [#HIVE-012]"
 
-          # v1.0.0 — the release the action will use as previous-version
-          git tag 1.0.0
+          # v11.0.0 — the release the action will use as previous-version
+          git tag 11.0.0
 
-          # Simulate a newer tag that exists on another branch (e.g. main is at 2.0.0).
+          # Simulate a newer tag that exists on another branch (e.g. main is at 12.0.0).
           # We create it on a descendant commit, then reset back.
           # The action must ignore it because --merged HEAD only returns ancestors.
           git commit --allow-empty -m "chore: future commit on main [#MAIN-001]"
-          git tag 2.0.0
+          git tag 12.0.0
           git reset --hard HEAD~1
 
           git commit --allow-empty -m "feat(shop): add machine status dashboard [#HIVE-063]"
@@ -126,16 +126,16 @@ jobs:
             fi
           }
 
-          if [ "${{ steps.release.outputs.previous-version }}" = "1.0.0" ]; then
-            ok "previous-version is 1.0.0"
+          if [ "${{ steps.release.outputs.previous-version }}" = "11.0.0" ]; then
+            ok "previous-version is 11.0.0"
           else
-            fail "expected previous-version=1.0.0, got ${{ steps.release.outputs.previous-version }}"
+            fail "expected previous-version=11.0.0, got ${{ steps.release.outputs.previous-version }}"
           fi
 
-          if [ "${{ steps.release.outputs.new-version }}" = "1.0.1" ]; then
-            ok "new-version is 1.0.1"
+          if [ "${{ steps.release.outputs.new-version }}" = "11.0.1" ]; then
+            ok "new-version is 11.0.1"
           else
-            fail "expected new-version=1.0.1, got ${{ steps.release.outputs.new-version }}"
+            fail "expected new-version=11.0.1, got ${{ steps.release.outputs.new-version }}"
           fi
 
           # commit hash links are absolute
@@ -144,7 +144,7 @@ jobs:
             "commit links must be absolute when commit-url is set"
 
           # version heading is a link to the release page
-          assert_contains "[1.0.1](https://github.com/stemys/release-action/releases/tag/1.0.1)" \
+          assert_contains "[11.0.1](https://github.com/stemys/release-action/releases/tag/11.0.1)" \
             "version heading links to release page" \
             "missing release URL link in version heading"
 
@@ -185,11 +185,11 @@ jobs:
 
           assert_contains "fix typo in shared utility" "--no-issue commit subject present" "missing --no-issue commit subject"
 
-          # commits before 1.0.0 must not appear in the changelog
+          # commits before 11.0.0 must not appear in the changelog
           if echo "$CHANGELOG_DIFF" | grep -q "purchase order workflow"; then
             fail "commit from before previous-version must not appear in changelog"
           else
-            ok "pre-1.0.0 commits are correctly excluded"
+            ok "pre-11.0.0 commits are correctly excluded"
           fi
 
           # chore commits must not appear in the changelog

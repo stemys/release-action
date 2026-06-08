@@ -41,6 +41,16 @@ inputs:
       targeting this branch is opened. Leave empty to skip.
     required: false
     default: ''
+  update-version-script:
+    description: >-
+      Optional shell command run after the new version is resolved but before
+      the git commit. Use it to update version references in project files such
+      as package.json (Node.js) or pom.xml (Maven). The new bare version
+      (without any tag prefix) is available as the $NEW_VERSION environment
+      variable. All modifications to already-tracked files are staged
+      automatically and included in the release commit.
+    required: false
+    default: ''
   dry-run:
     description: 'Preview all outputs without touching git or GitHub'
     required: false

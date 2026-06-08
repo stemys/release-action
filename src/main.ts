@@ -7,6 +7,7 @@ import {
   createTag,
   prependChangelog,
   pushChanges,
+  runUpdateVersionScript,
   tryRebaseBranch
 } from './git.js';
 import { createMergeBackPR, createRelease } from './github-release.js';
@@ -25,6 +26,7 @@ export async function run(): Promise<void> {
     const trackerUrl = core.getInput('tracker-url');
     const headerMarkdownFile = core.getInput('header-markdown-file');
     const mergeBackTo = core.getInput('merge-back-to');
+    const updateVersionScript = core.getInput('update-version-script');
     const dryRun = core.getBooleanInput('dry-run');
 
     if (!VALID_SCOPES.includes(scope)) {
@@ -83,6 +85,9 @@ export async function run(): Promise<void> {
     }
 
     await configureGit();
+    if (updateVersionScript) {
+      await runUpdateVersionScript(updateVersionScript, bareVersion);
+    }
     await prependChangelog(changelogFile, diff);
     await commitChangelog(changelogFile, newTag);
     await createTag(newTag);

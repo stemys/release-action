@@ -44,6 +44,16 @@ export async function pushChanges(tagName: string): Promise<void> {
   await exec('git', ['push', 'origin', tagName]);
 }
 
+export async function runUpdateVersionScript(
+  script: string,
+  version: string
+): Promise<void> {
+  await exec('bash', ['-c', script], {
+    env: { ...process.env, NEW_VERSION: version }
+  });
+  await exec('git', ['add', '-u']);
+}
+
 export async function tryRebaseBranch(
   targetBranch: string,
   onto: string
