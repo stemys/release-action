@@ -32,6 +32,8 @@ const mockCommitChangelog =
   jest.fn<(filePath: string, tagName: string) => Promise<void>>();
 const mockCreateTag = jest.fn<(tagName: string) => Promise<void>>();
 const mockPushChanges = jest.fn<(tagName: string) => Promise<void>>();
+const mockRunUpdateVersionScript =
+  jest.fn<(script: string, version: string) => Promise<void>>();
 const mockTryRebaseBranch =
   jest.fn<(targetBranch: string, onto: string) => Promise<boolean>>();
 const mockCreateRelease =
@@ -62,6 +64,7 @@ jest.unstable_mockModule('../src/git.js', () => ({
   commitChangelog: mockCommitChangelog,
   createTag: mockCreateTag,
   pushChanges: mockPushChanges,
+  runUpdateVersionScript: mockRunUpdateVersionScript,
   tryRebaseBranch: mockTryRebaseBranch
 }));
 jest.unstable_mockModule('../src/github-release.js', () => ({
@@ -79,7 +82,8 @@ function setupInputs({
   stage = 'stable',
   dryRun = false,
   headerMarkdownFile = '',
-  mergeBackTo = ''
+  mergeBackTo = '',
+  updateVersionScript = ''
 } = {}): void {
   core.getInput.mockImplementation((name) => {
     return (
@@ -91,7 +95,8 @@ function setupInputs({
           'changelog-file': 'CHANGELOG.md',
           'github-token': 'gh-token',
           'header-markdown-file': headerMarkdownFile,
-          'merge-back-to': mergeBackTo
+          'merge-back-to': mergeBackTo,
+          'update-version-script': updateVersionScript
         } as Record<string, string>
       )[name as string] ?? ''
     );
@@ -262,6 +267,56 @@ describe('run', () => {
       '1.0.1',
       'develop',
       DIFF
+    );
+  });
+
+  it('calls runVersionScript with the bare version when update-version-script is set', async () => {
+    setupInputs({
+      updateVersionScript: 'npm version $NEW_VERSION --no-git-tag-version'
+    });
+    await run();
+    expect(mockRunUpdateVersionScript).toHaveBeenCalledWith(
+      'npm version $NEW_VERSION --no-git-tag-version',
+      '1.0.1'
+    );
+  });
+
+  it('does not call runVersionScript when update-version-script is empty', async () => {
+    setupInputs();
+    await run();
+    expect(mockRunUpdateVersionScript).not.toHaveBeenCalled();
+  });
+
+  it('does not call runVersionScript in dry-run mode', async () => {
+    setupInputs({
+      dryRun: true,
+      updateVersionScript: 'npm version $NEW_VERSION --no-git-tag-version'
+    });
+    await run();
+    expect(mockRunUpdateVersionScript).not.toHaveBeenCalled();
+  });
+
+  it('strips tag-prefix before passing version to runVersionScript', async () => {
+    core.getInput.mockImplementation(
+      (name: string) =>
+        ({
+          release_scope: 'patch',
+          release_stage: 'stable',
+          'tag-prefix': 'v',
+          'changelog-file': 'CHANGELOG.md',
+          'github-token': 'gh-token',
+          'update-version-script': 'mvn versions:set -DnewVersion=$NEW_VERSION'
+        })[name] ?? ''
+    );
+    core.getBooleanInput.mockReturnValue(false);
+    mockResolveVersions.mockResolvedValue({
+      previousTag: 'v1.0.0',
+      newTag: 'v1.0.1'
+    });
+    await run();
+    expect(mockRunUpdateVersionScript).toHaveBeenCalledWith(
+      'mvn versions:set -DnewVersion=$NEW_VERSION',
+      '1.0.1'
     );
   });
 

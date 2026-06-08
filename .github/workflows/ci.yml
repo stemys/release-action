@@ -60,20 +60,20 @@ jobs:
           git config user.email "ci@github.com"
           git config user.name "CI Test"
 
-          # v0.9.0 — older release, commits here must NOT appear in the changelog
-          git tag 0.9.0
+          # v10.9.0 — older release, commits here must NOT appear in the changelog
+          git tag 10.9.0
           git commit --allow-empty -m "feat(erp): add purchase order workflow [#HIVE-010]"
           git commit --allow-empty -m "fix(shop): fix display bug on mobile [#HIVE-011]"
           git commit --allow-empty -m "chore(core): upgrade node version [#HIVE-012]"
 
-          # v1.0.0 — the release the action will use as previous-version
-          git tag 1.0.0
+          # v11.0.0 — the release the action will use as previous-version
+          git tag 11.0.0
 
-          # Simulate a newer tag that exists on another branch (e.g. main is at 2.0.0).
+          # Simulate a newer tag that exists on another branch (e.g. main is at 12.0.0).
           # We create it on a descendant commit, then reset back.
           # The action must ignore it because --merged HEAD only returns ancestors.
           git commit --allow-empty -m "chore: future commit on main [#MAIN-001]"
-          git tag 2.0.0
+          git tag 12.0.0
           git reset --hard HEAD~1
 
           git commit --allow-empty -m "feat(shop): add machine status dashboard [#HIVE-063]"

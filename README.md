@@ -57,6 +57,7 @@ Full example with all inputs:
     tracker-url: https://yourorg.atlassian.net/browse
     header-markdown-file: RELEASE_NOTES.md
     merge-back-to: develop
+    update-version-script: npm version $NEW_VERSION --no-git-tag-version
     dry-run: false
 
 - name: Print outputs
@@ -70,17 +71,18 @@ Full example with all inputs:
 
 ## Inputs
 
-| Input                  | Required | Default        | Description                                                                                                                                                                                             |
-| ---------------------- | -------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `release_scope`        | Yes      | —              | SemVer component to bump: `major`, `minor`, `patch`                                                                                                                                                     |
-| `release_stage`        | Yes      | `stable`       | Prerelease stage: `stable`, `rc`, `beta`, `alpha`                                                                                                                                                       |
-| `tag-prefix`           | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)                                                                                                                                                       |
-| `changelog-file`       | No       | `CHANGELOG.md` | Path to the changelog file                                                                                                                                                                              |
-| `github-token`         | Yes      | —              | Token used to create the GitHub Release                                                                                                                                                                 |
-| `tracker-url`          | No       | _(empty)_      | Base URL of your issue tracker — the ticket ID is appended automatically (e.g. `https://yourorg.atlassian.net/browse`). When set, ticket references become clickable links.                             |
-| `header-markdown-file` | No       | _(empty)_      | Path to a Markdown file whose content is inserted after the version heading and before the commit list. Useful for release summaries, migration guides, or upgrade notes.                               |
-| `merge-back-to`        | No       | _(empty)_      | Branch to merge the release back into (e.g. `main`, `master`, `develop`). When set, a branch `release/<tag>` is created from the new tag and a PR targeting this branch is opened. Leave empty to skip. |
-| `dry-run`              | No       | `false`        | Preview outputs without any Git or GitHub writes                                                                                                                                                        |
+| Input                   | Required | Default        | Description                                                                                                                                                                                                                |
+| ----------------------- | -------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release_scope`         | Yes      | —              | SemVer component to bump: `major`, `minor`, `patch`                                                                                                                                                                        |
+| `release_stage`         | Yes      | `stable`       | Prerelease stage: `stable`, `rc`, `beta`, `alpha`                                                                                                                                                                          |
+| `tag-prefix`            | No       | _(empty)_      | Prefix prepended to the version number (e.g. `v`)                                                                                                                                                                          |
+| `changelog-file`        | No       | `CHANGELOG.md` | Path to the changelog file                                                                                                                                                                                                 |
+| `github-token`          | Yes      | —              | Token used to create the GitHub Release                                                                                                                                                                                    |
+| `tracker-url`           | No       | _(empty)_      | Base URL of your issue tracker — the ticket ID is appended automatically (e.g. `https://yourorg.atlassian.net/browse`). When set, ticket references become clickable links.                                                |
+| `header-markdown-file`  | No       | _(empty)_      | Path to a Markdown file whose content is inserted after the version heading and before the commit list. Useful for release summaries, migration guides, or upgrade notes.                                                  |
+| `merge-back-to`         | No       | _(empty)_      | Branch to merge the release back into (e.g. `main`, `master`, `develop`). When set, a branch `release/<tag>` is created from the new tag and a PR targeting this branch is opened. Leave empty to skip.                    |
+| `update-version-script` | No       | _(empty)_      | Shell command to update version references in project files before the release commit. The new version is available as `$NEW_VERSION`. Modified tracked files are staged and included in the release commit automatically. |
+| `dry-run`               | No       | `false`        | Preview outputs without any Git or GitHub writes                                                                                                                                                                           |
 
 Commit hash links and the version heading link are derived automatically from
 the `GITHUB_SERVER_URL` and `GITHUB_REPOSITORY` environment variables injected

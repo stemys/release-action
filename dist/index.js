@@ -29112,6 +29112,12 @@ async function pushChanges(tagName) {
     await exec('git', ['push']);
     await exec('git', ['push', 'origin', tagName]);
 }
+async function runUpdateVersionScript(script, version) {
+    await exec('bash', ['-c', script], {
+        env: { ...process.env, NEW_VERSION: version }
+    });
+    await exec('git', ['add', '-u']);
+}
 async function tryRebaseBranch(targetBranch, onto) {
     const tempBranch = '__release-sync__';
     await exec('git', ['fetch', 'origin', targetBranch]);
@@ -36874,6 +36880,7 @@ async function run() {
         const trackerUrl = coreExports.getInput('tracker-url');
         const headerMarkdownFile = coreExports.getInput('header-markdown-file');
         const mergeBackTo = coreExports.getInput('merge-back-to');
+        const updateVersionScript = coreExports.getInput('update-version-script');
         const dryRun = coreExports.getBooleanInput('dry-run');
         if (!VALID_SCOPES.includes(scope)) {
             throw new Error(`Invalid release_scope "${scope}". Must be one of: ${VALID_SCOPES.join(', ')}`);
@@ -36907,6 +36914,9 @@ async function run() {
             return;
         }
         await configureGit();
+        if (updateVersionScript) {
+            await runUpdateVersionScript(updateVersionScript, bareVersion);
+        }
         await prependChangelog(changelogFile, diff);
         await commitChangelog(changelogFile, newTag);
         await createTag(newTag);
